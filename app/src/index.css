@@ -82,3 +82,12 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+body.theme-light {
+  background-color: #fff !important;
+  color: #212529 !important;
+}
+body.theme-dark {
+  background-color: #181a1b !important;
+  color: #f8f9fa !important;
+}
