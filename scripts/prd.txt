@@ -1,0 +1,88 @@
+<context>
+# Overview  
+A single-page React application that transforms whiteboard sketches into polished drawio diagrams. The app is designed for educators, engineers, students, and professionals who frequently use whiteboards for brainstorming and want to quickly digitize and share their sketches. It solves the problem of manual diagram recreation by automating the extraction and conversion process, making it easy to produce clean, shareable diagrams from rough sketches. The app is valuable for its speed, accuracy, and ability to work across devices.
+
+# Core Features  
+- **Responsive Single-Page React App**  
+  - Works seamlessly on desktops, tablets, and mobile devices (reactive layout).
+  - Uses Bootstrap for consistent, modern UI components and layout.
+- **Top and Bottom Bars**  
+  - Top bar: App branding, navigation, and quick actions.
+  - Bottom bar: Status messages, export/share controls, and help.
+- **Preferences & API Key Management**  
+  - Menu for managing API keys for VLM/LLMs (e.g., Gemini, Gemma4, or best available model for vision-to-structure tasks).
+  - Preferences for user settings (theme, default export format, etc.).
+- **Whiteboard Photo Upload**  
+  - Drag-and-drop area and file picker for uploading whiteboard photos.
+  - Support for common image formats (JPG, PNG, etc.).
+- **Sketch Analysis via VLM/LLM**  
+  - Calls a suitable vision-language model (research and select best, e.g., Gemma4, Gemini, GPT-4V, etc.) to analyze the uploaded photo.
+  - Extracts a structured description of all detected shapes (rectangles, circles, triangles, arrows, lines, text, ellipses, etc.), their locations, relationships (overlapping, adjacent-left, above, behind, etc.), and style attributes (bold, color, dashed lines, etc.).
+- **Drawio Diagram Generation**  
+  - Converts the structured description into a drawio-compatible diagram.
+  - Visualizes the resulting diagram within the app.
+- **Export & Sharing**  
+  - Allows users to download the drawio file.
+  - Provides sharing options (e.g., email, copy link, etc.).
+
+# User Experience  
+- **Personas**: Educators, engineers, students, business professionals, and anyone who uses whiteboards for ideation.
+- **Key User Flows**:
+  - User opens app on any device.
+  - Uploads a whiteboard photo via drag-and-drop or file picker.
+  - App analyzes the image, displays detected shapes and relationships, and generates a drawio diagram.
+  - User reviews, tweaks preferences if needed, and downloads or shares the diagram.
+- **UI/UX Considerations**:
+  - Clean, intuitive interface with clear feedback during upload and processing.
+  - Responsive design for all screen sizes.
+  - Accessible controls for managing API keys and preferences.
+  - Visual preview of both the original sketch and the generated diagram.
+</context>
+<PRD>
+# Technical Architecture  
+- **Frontend**: React (SPA), Bootstrap for UI, responsive design principles.
+- **Image Upload**: HTML5 drag-and-drop, file input, client-side validation.
+- **Model Integration**: API integration with best-available VLM/LLM (Gemma4, Gemini, GPT-4V, etc. — research and select optimal model for sketch-to-structure extraction).
+- **Shape Extraction**: Model returns JSON describing shapes, locations, relationships, and styles.
+- **Drawio Generation**: Convert model output to drawio XML/JSON format.
+- **Visualization**: Embed drawio viewer/editor for in-app preview.
+- **Export/Share**: Download as .drawio file, email/share link (optional: cloud storage integration).
+- **Preferences/API Keys**: Secure local storage for API keys and user preferences.
+
+# Development Roadmap  
+- **MVP Requirements**:
+  - Responsive React SPA with Bootstrap.
+  - Top/bottom bars and preferences menu.
+  - Image upload (drag-and-drop, file picker).
+  - API key management for VLM/LLM.
+  - Integration with selected model for sketch analysis.
+  - Extraction and display of shape/relationship/style data.
+  - Drawio diagram generation and in-app visualization.
+  - Download/share functionality.
+- **Future Enhancements**:
+  - Manual correction/editing of detected shapes.
+  - Support for additional export formats (SVG, PNG, etc.).
+  - Real-time collaboration/sharing.
+  - Cloud storage integration.
+  - Advanced style/theme customization.
+
+# Logical Dependency Chain
+- Foundation: Set up React app, Bootstrap, and responsive layout.
+- Core: Implement upload, preferences, and API key management.
+- Model: Integrate and test VLM/LLM for sketch analysis (research best model).
+- Extraction: Parse model output into structured data.
+- Generation: Convert structured data to drawio format and visualize.
+- Export: Implement download/share features.
+- Enhancement: Add manual editing, advanced sharing, and collaboration.
+
+# Risks and Mitigations  
+- **Model Accuracy**: Selected VLM/LLM may not accurately extract all shapes/relationships. Mitigation: Research and test multiple models, allow for manual correction in future versions.
+- **API Costs/Quotas**: Model usage may incur costs or hit rate limits. Mitigation: Allow user-supplied API keys, provide usage feedback.
+- **Drawio Integration**: Complexity in converting model output to drawio format. Mitigation: Use drawio documentation/examples, start with simple shapes.
+- **Device Compatibility**: Ensuring full reactivity and usability on all devices. Mitigation: Use Bootstrap, test on multiple screen sizes.
+
+# Appendix  
+- **Research**: Survey of available VLM/LLMs for vision-to-structure extraction (Gemma4, Gemini, GPT-4V, etc.).
+- **Technical Specs**: drawio file format, Bootstrap 5, React 18+.
+- **References**: drawio API docs, VLM/LLM API docs, responsive design best practices.
+</PRD> 
