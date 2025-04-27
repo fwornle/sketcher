@@ -51,6 +51,8 @@ export function parseShapesFromVLMResponse(response: unknown): {
     const style = typeof e.style === 'object' && e.style !== null ? e.style : undefined;
     // Text property (optional)
     const text = typeof e.text === 'string' ? e.text : undefined;
+    // Orientation property (optional)
+    const orientation = typeof e.orientation === 'string' && ['north', 'south', 'east', 'west'].includes(e.orientation) ? e.orientation as ('north' | 'south' | 'east' | 'west') : undefined;
     if (!id || !type || !boundingBox) {
       errors.push(`Element at index ${i} missing required fields`);
       return;
@@ -59,26 +61,26 @@ export function parseShapesFromVLMResponse(response: unknown): {
     let shape: Shape;
     switch (type) {
       case 'rectangle':
-        shape = { id, type, boundingBox, style, text } as Rectangle;
+        shape = { id, type, boundingBox, style, text, orientation } as Rectangle;
         break;
       case 'circle':
-        shape = { id, type, boundingBox, style, text } as Circle;
+        shape = { id, type, boundingBox, style, text, orientation } as Circle;
         break;
       case 'ellipse':
-        shape = { id, type, boundingBox, style, text } as Ellipse;
+        shape = { id, type, boundingBox, style, text, orientation } as Ellipse;
         break;
       case 'triangle':
-        shape = { id, type, boundingBox, style, text } as Triangle;
+        shape = { id, type, boundingBox, style, text, orientation } as Triangle;
         break;
       case 'arrow':
-        shape = { id, type, boundingBox, style } as Arrow;
+        shape = { id, type, boundingBox, style, orientation } as Arrow;
         break;
       case 'line':
-        shape = { id, type, boundingBox, style } as Line;
+        shape = { id, type, boundingBox, style, orientation } as Line;
         break;
       case 'text':
         if (text) {
-          shape = { id, type, boundingBox, style, text } as TextShape;
+          shape = { id, type, boundingBox, style, text, orientation } as TextShape;
         } else {
           errors.push(`Text element at index ${i} missing text property`);
           return;
@@ -102,11 +104,16 @@ export function parseShapesFromVLMResponse(response: unknown): {
     const type = typeof r.type === 'string' ? r.type as RelationshipType : undefined;
     const sourceId = typeof r.sourceId === 'string' ? r.sourceId : undefined;
     const targetId = typeof r.targetId === 'string' ? r.targetId : undefined;
+    // Add waypoint parsing (optional)
+    const waypoints = Array.isArray(r.waypoints) ? r.waypoints.filter((wp): wp is { x: number; y: number } => 
+      typeof wp === 'object' && wp !== null && typeof (wp as Record<string, unknown>).x === 'number' && typeof (wp as Record<string, unknown>).y === 'number'
+    ).map(wp => ({ x: wp.x, y: wp.y })) : undefined;
+
     if (!id || !type || !sourceId || !targetId) {
       errors.push(`Relationship at index ${i} missing required fields`);
       return;
     }
-    relationships.push({ id, type, sourceId, targetId });
+    relationships.push({ id, type, sourceId, targetId, waypoints });
   });
 
   return { shapes, relationships, errors };

@@ -29,6 +29,7 @@ export interface Shape {
   style?: Style;
   parentId?: string; // Optional parent for grouping
   zIndex?: number;   // Optional z-order
+  orientation?: 'north' | 'south' | 'east' | 'west'; // Optional orientation
 }
 
 export type ShapeType =

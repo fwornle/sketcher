@@ -4,114 +4,23 @@
  *
  * Converts internal shape/relationship data to Drawio XML format.
  */
-import type { Shape, ShapeRelationship, Style } from './shapeModels';
+import type { Shape, ShapeRelationship, TextShape } from './shapeModels';
 import pako from 'pako';
 
 /**
  * Escapes XML special characters
  */
-function _escapeXml(str: string): string {
-  return str.replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c] || c));
-}
-
-/**
- * Generates a unique Drawio cell ID
- */
-let cellIdCounter = 100;
-function nextCellId(): string {
-  return (cellIdCounter++).toString();
-}
-
-/**
- * Converts internal style attributes to Drawio style string
- * @param style Internal style object
- * @returns Drawio style string
- *
- * Mapping:
- * - color -> strokeColor
- * - fill -> fillColor
- * - lineStyle -> dashed/dotted
- * - fontWeight -> fontStyle
- * - opacity -> opacity
- * TODO: Add gradients, shadows, advanced text formatting
- */
-function styleToDrawioStyle(style?: Style): string {
-  if (!style) return '';
-  const parts: string[] = [];
-  if (style.color) parts.push(`strokeColor=${style.color}`);
-  if (style.fill) parts.push(`fillColor=${style.fill}`);
-  if (style.lineStyle === 'dashed') parts.push('dashed=1');
-  if (style.lineStyle === 'dotted') parts.push('dashed=1;dashPattern=1 4');
-  if (style.fontWeight === 'bold') parts.push('fontStyle=1');
-  if (typeof style.opacity === 'number') parts.push(`opacity=${Math.round(style.opacity * 100)}`);
-  // TODO: Add more style mappings (font, size, alignment, etc.)
-  return parts.join(';');
-}
-
-/**
- * Converts a Shape to a Drawio <mxCell> XML string
- *
- * Spatial relationships are preserved via geometry (x, y, width, height).
- * TODO: Add z-order and parent/child support for grouping and layering.
- */
-function shapeToMxCell(shape: Shape, newDrawioId: string): string {
-  const id = newDrawioId;
-  const parent = shape.parentId ?? '1';
-  let baseStyle = '';
-  switch (shape.type) {
-    case 'rectangle':
-      baseStyle = 'shape=rectangle';
-      break;
-    case 'ellipse':
-    case 'circle':
-      baseStyle = 'shape=ellipse';
-      break;
-    case 'triangle':
-      baseStyle = 'shape=triangle'; // Drawio supports up/down/left/right via direction (TODO)
-      break;
-    // TODO: Support more shape types (arrow, line, text, etc.)
-    default:
-      baseStyle = 'shape=rectangle';
-  }
-  const { x, y, width, height } = shape.boundingBox;
-  function hasText(s: Shape): s is Shape & { text: string } {
-    return 'text' in s && typeof (s as { text?: unknown }).text === 'string';
-  }
-  const label = hasText(shape) ? _escapeXml(shape.text) : '';
-  const styleStr = [baseStyle, styleToDrawioStyle(shape.style)].filter(Boolean).join(';');
-  return `
-        <mxCell id="${id}" value="${label}" style="${styleStr}" vertex="1" parent="${parent}">
-          <mxGeometry x="${x}" y="${y}" width="${width}" height="${height}" as="geometry" />
-        </mxCell>`;
-}
-
-/**
- * Converts a ShapeRelationship to a Drawio <mxCell> edge XML string
- *
- * Connections are preserved via sourceId/targetId.
- * Supports waypoints for edge routing if present.
- * TODO: Add support for connection constraints and advanced edge formatting.
- */
-function relationshipToMxCell(rel: ShapeRelationship, idMapping: Map<string, string>): string {
-  const id = nextCellId();
-  const parent = '1';
-  const source = idMapping.get(rel.sourceId);
-  const target = idMapping.get(rel.targetId);
-
-  if (!source || !target) {
-    console.warn(`Skipping relationship ${rel.id}: Source (${rel.sourceId}) or Target (${rel.targetId}) not found in ID mapping.`);
-    return '';
-  }
-
-  const styleStr = 'style' in rel ? styleToDrawioStyle((rel as { style?: Style }).style) : '';
-  let pointsXml = '';
-  if (rel.waypoints && rel.waypoints.length > 0) {
-    pointsXml = `<Array as="points">${rel.waypoints.map(pt => `<mxPoint x="${pt.x}" y="${pt.y}" />`).join('')}</Array>`;
-  }
-  return `
-        <mxCell id="${id}" edge="1" parent="${parent}" source="${source}" target="${target}" style="${styleStr}">
-          <mxGeometry relative="1" as="geometry">${pointsXml}</mxGeometry>
-        </mxCell>`;
+function escapeXml(unsafe: string): string {
+  return unsafe.replace(/[<>&'"]/g, c => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
 }
 
 /**
@@ -121,38 +30,76 @@ function relationshipToMxCell(rel: ShapeRelationship, idMapping: Map<string, str
  * @returns Drawio XML string
  */
 export function generateDrawioXml(shapes: Shape[], relationships: ShapeRelationship[]): string {
-  const idMapping = new Map<string, string>();
+  const CANVAS_MARGIN = 50; // Add some padding
+  const canvasHeight = shapes.reduce((max, shape) => {
+    return Math.max(max, shape.boundingBox.y + shape.boundingBox.height);
+  }, 0) + CANVAS_MARGIN;
 
-  // Sort shapes by zIndex (ascending, undefined last)
-  const sortedShapes = [...shapes].sort((a, b) => {
-    if (a.zIndex === undefined && b.zIndex === undefined) return 0;
-    if (a.zIndex === undefined) return 1;
-    if (b.zIndex === undefined) return -1;
-    return a.zIndex - b.zIndex;
-  });
+  const elementsXml = shapes.map(element => {
+    // Coordinate transformation
+    const drawioX = element.boundingBox.x;
+    const drawioY = canvasHeight - (element.boundingBox.y + element.boundingBox.height); // Flip Y
+    const drawioId = `el-${element.id}`; // Prefix element IDs
 
-  // Generate shape cells, assigning new IDs and populating the mapping
-  const shapeCells = sortedShapes.map(shape => {
-    const newId = nextCellId();
-    idMapping.set(shape.id, newId);
-    return shapeToMxCell(shape, newId);
+    let styleString = '';
+    if (element.style?.color) styleString += `strokeColor=${element.style.color};`;
+    if (element.style?.fill) styleString += `fillColor=${element.style.fill};`;
+    if (element.style?.lineStyle && element.style.lineStyle !== 'solid') {
+      styleString += `dashed=${element.style.lineStyle === 'dashed' ? 1 : 0};`;
+      // Add other line styles (dotted, etc.) if needed
+    }
+
+    // Add orientation for relevant shapes
+    if (element.type === 'triangle' || element.type === 'arrow') {
+      switch (element.orientation) {
+        case 'north': styleString += 'direction=north;'; break;
+        case 'south': styleString += 'direction=south;'; break;
+        case 'west': styleString += 'direction=west;'; break;
+        case 'east': // Default for Drawio triangle/arrow
+        default: styleString += 'direction=east;'; break;
+      }
+    }
+
+    // Check if it's a TextShape before accessing text property
+    const label = escapeXml(element.type === 'text' ? (element as TextShape).text || '' : '');
+    const geometry = `<mxGeometry x="${drawioX}" y="${drawioY}" width="${element.boundingBox.width}" height="${element.boundingBox.height}" as="geometry" />`;
+    const cellType = element.type === 'text' ? 'text;html=1;resizable=0;points=[];align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;' : `shape=${element.type};`; // Use Drawio shape names
+
+    return `<mxCell id="${drawioId}" value="${label}" style="${cellType}${styleString}" vertex="1" parent="1">
+      ${geometry}
+    </mxCell>`;
   }).join('\n');
 
-  // Generate relationship cells using the mapping
-  const relCells = relationships.map(rel => relationshipToMxCell(rel, idMapping))
-                                .filter(cell => cell !== '')
-                                .join('\n');
+  const relationshipsXml = relationships.map(rel => {
+    // Transform waypoints if they exist
+    const waypointsXml = rel.waypoints
+      ? `<mxGeometry relative="1" as="geometry">
+          <Array as="points">
+            ${rel.waypoints.map(wp => `<mxPoint x="${wp.x}" y="${canvasHeight - wp.y}" />`).join('\n')}
+          </Array>
+        </mxGeometry>`
+      : '<mxGeometry relative="1" as="geometry" />';
 
-  const diagramId = nextCellId();
+    // Add style based on type if needed
+    const relStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;';
+    const drawioRelId = `rel-${rel.id}`; // Prefix relationship IDs
+    const sourceIdPrefixed = `el-${rel.sourceId}`; // Prefix source ID
+    const targetIdPrefixed = `el-${rel.targetId}`; // Prefix target ID
+
+    return `<mxCell id="${drawioRelId}" style="${relStyle}" edge="1" parent="1" source="${sourceIdPrefixed}" target="${targetIdPrefixed}">
+      ${waypointsXml}
+    </mxCell>`;
+  }).join('\n');
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net">
-  <diagram id="${diagramId}" name="Page-1">
-    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1">
+<mxfile host="embed.diagrams.net" modified="2024-03-21T12:00:00.000Z" agent="Sketcher v1.0" version="20.8.4">
+  <diagram name="Diagram 1" id="diagram-1">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-${shapeCells}
-${relCells}
+        ${elementsXml}
+        ${relationshipsXml}
       </root>
     </mxGraphModel>
   </diagram>
