@@ -30,6 +30,8 @@ export interface Shape {
   parentId?: string; // Optional parent for grouping
   zIndex?: number;   // Optional z-order
   orientation?: 'north' | 'south' | 'east' | 'west'; // Optional orientation
+  role?: string; // Optional role description
+  orientation_angle?: number; // Added for v2 prompt compatibility
 }
 
 export type ShapeType =
@@ -39,7 +41,9 @@ export type ShapeType =
   | 'triangle'
   | 'arrow'
   | 'line'
-  | 'text';
+  | 'text'
+  | 'parallelogram'
+  | 'rhombus';
 
 export interface Rectangle extends Shape {
   type: 'rectangle';
@@ -73,6 +77,16 @@ export interface Line extends Shape {
 export interface TextShape extends Shape {
   type: 'text';
   text: string;
+}
+
+export interface Parallelogram extends Shape {
+  type: 'parallelogram';
+  text?: string;
+}
+
+export interface Rhombus extends Shape {
+  type: 'rhombus';
+  text?: string;
 }
 
 /**

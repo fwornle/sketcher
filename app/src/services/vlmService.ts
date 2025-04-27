@@ -1,14 +1,24 @@
 import { usePreferences } from '../context/PreferencesContext';
 import { Preferences } from './storage';
 
-export interface BoundingBox {
+// Renamed original BoundingBox to avoid conflict
+export interface BoundingBoxXYWH {
   x: number; // top-left x (percentage or pixels)
   y: number; // top-left y
   width: number;
   height: number;
 }
 
-export interface Style {
+// New BoundingBox format from v2 prompt
+export interface BoundingBoxX1Y1X2Y2 {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+// Renamed original Style to avoid conflict
+export interface StyleSimple {
   color?: string;
   lineStyle?: 'solid' | 'dashed' | 'dotted';
   fill?: string;
@@ -16,28 +26,69 @@ export interface Style {
   // ... other relevant styles
 }
 
-export interface DiagramElement {
-  id: string;
-  type: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'arrow' | 'line' | 'text';
-  boundingBox: BoundingBox;
-  text?: string;
-  style?: Style;
+// New Style format from v2 prompt
+export interface StyleInfo {
+  line_thickness?: 'thin' | 'medium' | 'thick' | string; // Allow string for flexibility
+  line_style?: 'solid' | 'dashed' | 'dotted' | string; // Allow string
+  color?: string;
+  fill?: string | 'none';
 }
 
-export interface Relationship {
+// Relationship nested within elements (v2 prompt)
+export interface NestedRelationship {
+  related_element_id: number;
+  relation_type: string; // e.g., "left_of", "above", "overlaps_with", etc.
+}
+
+// Define specific dimension types for the union
+interface WidthHeight { width: number; height: number; }
+interface Radius { radius: number; }
+interface Length { length: number; }
+interface BaseHeight { base: number; height: number; }
+
+// Union type for dimensions
+// Replace `any` with `unknown` for better type safety, keep fallback for flexibility
+type ElementDimensions = WidthHeight | Radius | Length | BaseHeight | { [key: string]: unknown } | null;
+
+// Updated DiagramElement for v2 prompt schema
+export interface DiagramElement {
+  id: number; // Changed to number
+  type: string; // "rectangle", "square", "text", etc.
+  bounding_box: BoundingBoxX1Y1X2Y2;
+  center_coordinates?: { cx: number; cy: number }; // Optional as it's approximate
+  dimensions?: ElementDimensions; // Use the specific union type
+  orientation_angle?: number;
+  style_info?: StyleInfo | null;
+  text_content?: string | null;
+  relationships?: NestedRelationship[]; // Relationships are now nested here
+  // Removed old fields like `style`, `orientation`, `role` if covered by new structure
+}
+
+// Renamed original Relationship
+export interface RelationshipTopLevel {
   id: string;
   type: 'connects' | 'contains' | 'above' | 'below' | 'left-of' | 'right-of' | 'overlaps';
   sourceId: string;
   targetId: string;
 }
 
-export interface StructuredDiagram {
+// Summary object from v2 prompt
+export interface AnalysisSummary {
+  total_distinct_elements: number;
+  composition_interpretation: string;
+}
+
+// Updated VLMServiceResponse for v2 prompt schema
+export interface VLMServiceResponse {
+  analysis_summary: AnalysisSummary;
   elements: DiagramElement[];
-  relationships: Relationship[];
+  plausibility_check_notes?: string; // Optional as it's a note
+  vlmProvider?: string; // Added to identify the VLM used
+  // Removed top-level `relationships` and `compositionDescription`
 }
 
 export interface VLMService {
-  analyzeImage(imageDataUrl: string): Promise<StructuredDiagram>;
+  analyzeImage(imageDataUrl: string): Promise<VLMServiceResponse>;
 }
 
 /**
@@ -50,14 +101,90 @@ export interface VLMService {
  * Each version should include rationale and example usage in comments.
  */
 const GEMINI_PROMPTS: Record<string, string> = {
-  /**
-   * v1: Baseline prompt with few-shot example and explicit output instructions.
-   * - Instructs model to output only valid JSON, no extra text.
-   * - Includes a few-shot example for better structure.
-   * - Rationale: Empirically yields the most reliable structured output for whiteboard diagrams.
-   */
-  v1: `You are an expert diagram analysis assistant. Analyze the provided whiteboard sketch image and output a structured JSON object describing all detected elements and their relationships.\n\n- Only output a valid JSON object, no extra text.\n- Use the following format:\n{\n  elements: [\n    { id, type, boundingBox: {x, y, width, height}, text, style, orientation }, ...\n  ],\n  relationships: [\n    { id, type, sourceId, targetId }, ...\n  ]\n}\n- type: rectangle, circle, ellipse, triangle, arrow, line, text\n- boundingBox: coordinates relative to the image\n- style: color, lineStyle, fill, fontWeight\n- **orientation**: For directional shapes (triangle, arrow), specify the direction it points (north, south, east, west) relative to the image (y-axis increases upwards). Omit if not applicable.\n- If a property is unknown, omit it.\n- Do not include any explanations or comments.\n\nExample input: Whiteboard sketch with a rectangle labeled 'Start' and an arrow pointing to a circle labeled 'End'. The arrow points right.\n\nExample output:\n{\n  "elements": [\n    { "id": "1", "type": "rectangle", "boundingBox": {"x": 10, "y": 20, "width": 100, "height": 50}, "text": "Start", "style": {"color": "black", "lineStyle": "solid"} },\n    { "id": "2", "type": "circle", "boundingBox": {"x": 150, "y": 30, "width": 50, "height": 50}, "text": "End", "style": {"color": "black", "lineStyle": "solid"} },\n    { "id": "3", "type": "arrow", "boundingBox": {"x": 110, "y": 45, "width": 40, "height": 10}, "style": {"color": "black", "lineStyle": "solid"}, "orientation": "east" }\n  ],\n  "relationships": [\n    { "id": "r1", "type": "connects", "sourceId": "1", "targetId": "2" }\n  ]\n}`
-  // Add more versions as needed, e.g., v2, v3...
+  v1: `You are an expert visual analysis assistant specialized in interpreting whiteboard sketches containing geometric shapes and text. Your task is to meticulously analyze the provided image of a whiteboard sketch and extract comprehensive information about all its elements, their properties, and their relationships, outputting the result ONLY as a valid JSON object.
+
+  **JSON Output Requirements:**
+  
+  The JSON object must have the following top-level keys:
+  1.  \`analysis_summary\`: An object containing:
+      * \`total_distinct_elements\`: (Integer) The total number of distinct geometric shapes and text blocks identified.
+      * \`composition_interpretation\`: (String) A brief description of what the overall sketch might represent (e.g., "Flowchart illustrating a process", "Mind map exploring ideas", "Geometric construction study", "Basic UI wireframe").
+  2.  \`elements\`: An array of objects, where each object represents a single detected element (shape or text). Each element object must have the following keys:
+      * \`id\`: (Integer) A unique sequential identifier for each element (starting from 1).
+      * \`type\`: (String) The type of the element. Must be one of: "rectangle", "square", "parallelogram", "rhombus", "triangle", "circle", "ellipse", "arrow", "line_segment", "text", "other_shape".
+      * \`bounding_box\`: An object with \`x1\`, \`y1\`, \`x2\`, \`y2\` keys (Integers), representing the top-left and bottom-right pixel coordinates of the element's bounding box. Assume origin (0,0) is the top-left corner of the image.
+      * \`center_coordinates\`: An object with \`cx\`, \`cy\` keys (Floats or Integers), representing the approximate center coordinates.
+      * \`dimensions\`: An object containing size information appropriate for the shape type:
+          * For rectangles/squares/parallelograms/rhombus/ellipses: \`width\` (Integer), \`height\` (Integer).
+          * For circles: \`radius\` (Float or Integer).
+          * For triangles: \`base\` (Integer), \`height\` (Integer) (if easily determinable) or side lengths if possible.
+          * For line_segments/arrows: \`length\` (Float or Integer).
+      * \`orientation_angle\`: (Float) Estimated angle of rotation in degrees (0 for horizontal/vertical alignment, positive for counter-clockwise rotation), if applicable and significantly non-zero (e.g., > 5 degrees). Default to 0 if not applicable or axis-aligned.
+      * \`style_info\`: An object with keys like:
+          * \`line_thickness\`: (String) e.g., "thin", "medium", "thick".
+          * \`line_style\`: (String) e.g., "solid", "dashed", "dotted".
+          * \`color\`: (String) Detected color (e.g., "black", "red", "blue") if discernible, otherwise "unknown".
+          * \`fill\`: (String) Fill color if applicable, otherwise "none".
+      * \`text_content\`: (String) The recognized text within the element. Null if not a text element.
+      * \`relationships\`: An array of objects describing spatial relationships to *other* elements. Each relationship object should have:
+          * \`related_element_id\`: (Integer) The \`id\` of the other element.
+          * \`relation_type\`: (String) The type of relationship (e.g., "left_of", "right_of", "above", "below", "overlaps_with", "partially_overlaps_with", "inside", "contains", "connected_to_start", "connected_to_end", "points_to"). Be precise (e.g., specify which part overlaps if possible).
+  3.  \`plausibility_check_notes\`: (String) Describe potential inconsistencies or confirmations regarding the extracted coordinates and dimensions. For example, "Bounding box dimensions generally match calculated width/height for rectangles", "Overlap relationships seem consistent with bounding box intersections", or "Detected center/radius for circle seems consistent with visual representation".
+  
+  **Instructions:**
+  
+  1.  Carefully examine the entire whiteboard sketch image.
+  2.  Identify every distinct geometric shape (rectangles, squares, circles, ellipses, triangles, parallelograms, rhombus, arrows, lines) and block of text.
+  3.  For each element, determine its type, precise bounding box, approximate center, dimensions, orientation, style, and any text content.
+  4.  Analyze the spatial relationships between pairs of elements (position, overlap, connection). Focus on immediate and clear relationships.
+  5.  Count the total number of distinct elements identified.
+  6.  Provide a concise interpretation of the sketch's likely purpose or subject.
+  7.  Generate ONLY the JSON object conforming strictly to the structure specified above. Do not include any explanatory text before or after the JSON object.
+  8.  Attempt to cross-verify the geometric data (e.g., do bounding box coordinates match the reported width/height?) and note findings in \`plausibility_check_notes\`.
+  
+  Analyze the provided image now and generate the JSON output.`,
+  v2: `You are an expert visual analysis assistant specialized in interpreting whiteboard sketches containing geometric shapes and text. Your task is to meticulously analyze the provided image of a whiteboard sketch and extract comprehensive information about all its elements, their properties, and their relationships, outputting the result ONLY as a valid JSON object.
+
+  **JSON Output Requirements:**
+  
+  The JSON object must have the following top-level keys:
+  1.  \`analysis_summary\`: An object containing:
+      * \`total_distinct_elements\`: (Integer) The total number of distinct geometric shapes and text blocks identified.
+      * \`composition_interpretation\`: (String) A brief description of what the overall sketch might represent (e.g., "Flowchart illustrating a process", "Mind map exploring ideas", "Geometric construction study", "Basic UI wireframe").
+  2.  \`elements\`: An array of objects, where each object represents a single detected element (shape or text). Each element object must have the following keys:
+      * \`id\`: (Integer) A unique sequential identifier for each element (starting from 1).
+      * \`type\`: (String) The type of the element. Must be one of: "rectangle", "square", "parallelogram", "rhombus", "triangle", "circle", "ellipse", "arrow", "line_segment", "text", "other_shape".
+      * \`bounding_box\`: An object with \`x1\`, \`y1\`, \`x2\`, \`y2\` keys (Integers), representing the top-left and bottom-right pixel coordinates of the element's bounding box. Assume origin (0,0) is the top-left corner of the image.
+      * \`center_coordinates\`: An object with \`cx\`, \`cy\` keys (Floats or Integers), representing the approximate center coordinates.
+      * \`dimensions\`: An object containing size information appropriate for the shape type:
+          * For rectangles/squares/parallelograms/rhombus/ellipses: \`width\` (Integer), \`height\` (Integer).
+          * For circles: \`radius\` (Float or Integer).
+          * For triangles: \`base\` (Integer), \`height\` (Integer) (if easily determinable) or side lengths if possible.
+          * For line_segments/arrows: \`length\` (Float or Integer).
+      * \`orientation_angle\`: (Float) Estimated angle of rotation in degrees (0 for horizontal/vertical alignment, positive for counter-clockwise rotation), if applicable and significantly non-zero (e.g., > 5 degrees). Default to 0 if not applicable or axis-aligned.
+      * \`style_info\`: An object with keys like:
+          * \`line_thickness\`: (String) e.g., "thin", "medium", "thick".
+          * \`line_style\`: (String) e.g., "solid", "dashed", "dotted".
+          * \`color\`: (String) Detected color (e.g., "black", "red", "blue") if discernible, otherwise "unknown".
+          * \`fill\`: (String) Fill color if applicable, otherwise "none".
+      * \`text_content\`: (String) The recognized text within the element. Null if not a text element.
+      * \`relationships\`: An array of objects describing spatial relationships to *other* elements. Each relationship object should have:
+          * \`related_element_id\`: (Integer) The \`id\` of the other element.
+          * \`relation_type\`: (String) The type of relationship (e.g., "left_of", "right_of", "above", "below", "overlaps_with", "partially_overlaps_with", "inside", "contains", "connected_to_start", "connected_to_end", "points_to"). Be precise (e.g., specify which part overlaps if possible).
+  3.  \`plausibility_check_notes\`: (String) Describe potential inconsistencies or confirmations regarding the extracted coordinates and dimensions. For example, "Bounding box dimensions generally match calculated width/height for rectangles", "Overlap relationships seem consistent with bounding box intersections", or "Detected center/radius for circle seems consistent with visual representation".
+  
+  **Instructions:**
+  
+  1.  Carefully examine the entire whiteboard sketch image.
+  2.  Identify every distinct geometric shape (rectangles, squares, circles, ellipses, triangles, parallelograms, rhombus, arrows, lines) and block of text.
+  3.  For each element, determine its type, precise bounding box, approximate center, dimensions, orientation, style, and any text content.
+  4.  Analyze the spatial relationships between pairs of elements (position, overlap, connection). Focus on immediate and clear relationships.
+  5.  Count the total number of distinct elements identified.
+  6.  Provide a concise interpretation of the sketch's likely purpose or subject.
+  7.  Generate ONLY the JSON object conforming strictly to the structure specified above. Do not include any explanatory text before or after the JSON object.
+  8.  Attempt to cross-verify the geometric data (e.g., do bounding box coordinates match the reported width/height?) and note findings in \`plausibility_check_notes\`.
+  
+  Analyze the provided image now and generate the JSON output.`,
 };
 
 /**
@@ -142,11 +269,11 @@ export class GeneralAPIError extends Error {
  */
 
 /**
- * Validates a parsed object against the StructuredDiagram schema.
+ * Validates a parsed object against the VLMServiceResponse schema (v2).
  * @param obj The parsed object to validate
- * @returns { valid: boolean, errors: string[], partial?: StructuredDiagram }
+ * @returns { valid: boolean, errors: string[], partial?: Partial<VLMServiceResponse> }
  */
-export function validateStructuredDiagram(obj: unknown): { valid: boolean, errors: string[], partial?: StructuredDiagram } {
+export function validateStructuredDiagram(obj: unknown): { valid: boolean, errors: string[], partial?: Partial<VLMServiceResponse> } {
   const errors: string[] = [];
   if (!obj || typeof obj !== 'object') {
     errors.push('Root is not an object.');
@@ -163,21 +290,11 @@ export function validateStructuredDiagram(obj: unknown): { valid: boolean, error
   function isDiagramElement(el: unknown): el is DiagramElement {
     if (!el || typeof el !== 'object') return false;
     const e = el as Record<string, unknown>;
-    const bb = e.boundingBox as Record<string, unknown>;
+    const bb = e.bounding_box as Record<string, unknown>;
     return (
-      typeof e.id === 'string' &&
+      typeof e.id === 'number' &&
       typeof e.type === 'string' &&
-      bb && typeof bb.x === 'number'
-    );
-  }
-  function isRelationship(rel: unknown): rel is Relationship {
-    if (!rel || typeof rel !== 'object') return false;
-    const r = rel as Record<string, unknown>;
-    return (
-      typeof r.id === 'string' &&
-      typeof r.type === 'string' &&
-      typeof r.sourceId === 'string' &&
-      typeof r.targetId === 'string'
+      bb && typeof bb.x1 === 'number'
     );
   }
   // Validate elements
@@ -188,35 +305,24 @@ export function validateStructuredDiagram(obj: unknown): { valid: boolean, error
           return false;
         }
         const e = el as Record<string, unknown>;
-        if (typeof e.id !== 'string') errors.push(`Element at index ${i} missing id.`);
+        if (typeof e.id !== 'number') errors.push(`Element at index ${i} missing id.`);
         if (typeof e.type !== 'string') errors.push(`Element at index ${i} missing type.`);
-        if (!e.boundingBox || typeof e.boundingBox !== 'object') errors.push(`Element at index ${i} missing boundingBox.`);
+        if (!e.bounding_box || typeof e.bounding_box !== 'object') errors.push(`Element at index ${i} missing bounding_box.`);
         else {
-          const bb = e.boundingBox as Record<string, unknown>;
-          if (typeof bb.x !== 'number' || typeof bb.y !== 'number' || typeof bb.width !== 'number' || typeof bb.height !== 'number') {
-            errors.push(`Element at index ${i} has invalid boundingBox.`);
+          const bb = e.bounding_box as Record<string, unknown>;
+          if (typeof bb.x1 !== 'number' || typeof bb.y1 !== 'number' || typeof bb.x2 !== 'number' || typeof bb.y2 !== 'number') {
+            errors.push(`Element at index ${i} has invalid bounding_box.`);
           }
         }
         return isDiagramElement(el);
       }) as DiagramElement[]
     : [];
-  // Validate relationships
-  const validRelationships = Array.isArray(o.relationships)
-    ? o.relationships.filter((rel, i) => {
-        if (!rel || typeof rel !== 'object') {
-          errors.push(`Relationship at index ${i} is not an object.`);
-          return false;
-        }
-        const r = rel as Record<string, unknown>;
-        if (typeof r.id !== 'string') errors.push(`Relationship at index ${i} missing id.`);
-        if (typeof r.type !== 'string') errors.push(`Relationship at index ${i} missing type.`);
-        if (typeof r.sourceId !== 'string') errors.push(`Relationship at index ${i} missing sourceId.`);
-        if (typeof r.targetId !== 'string') errors.push(`Relationship at index ${i} missing targetId.`);
-        return isRelationship(rel);
-      }) as Relationship[]
-    : [];
   const valid = errors.length === 0;
-  const partial: StructuredDiagram = { elements: validElements, relationships: validRelationships };
+  const partial: Partial<VLMServiceResponse> = { 
+    analysis_summary: o.analysis_summary as AnalysisSummary, // Assume valid if present, or add checks
+    elements: validElements, 
+    plausibility_check_notes: o.plausibility_check_notes as string // Assume valid if present
+  };
   return { valid, errors, partial };
 }
 
@@ -240,7 +346,7 @@ async function hashImageData(imageDataUrl: string): Promise<string> {
  * Simple in-memory LRU cache for Gemini results (max 50 entries).
  * Keyed by image hash. Exposed for testing.
  */
-const GEMINI_CACHE = new Map<string, StructuredDiagram>();
+const GEMINI_CACHE = new Map<string, VLMServiceResponse>();
 const GEMINI_CACHE_MAX = 50;
 
 /**
@@ -270,7 +376,7 @@ class GeminiAdapter implements VLMService {
    * @param imageDataUrl Image as a base64 data URL (PNG recommended)
    * @returns Promise resolving to a StructuredDiagram
    */
-  async analyzeImage(imageDataUrl: string): Promise<StructuredDiagram> {
+  async analyzeImage(imageDataUrl: string): Promise<VLMServiceResponse> {
     const imageHash = await hashImageData(imageDataUrl);
     // Check cache first
     if (GEMINI_CACHE.has(imageHash)) {
@@ -283,7 +389,7 @@ class GeminiAdapter implements VLMService {
     }
     const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + this.apiKey;
     const base64 = imageDataUrl.split(',')[1];
-    const prompt = buildGeminiPrompt();
+    const prompt = buildGeminiPrompt('v2');
     const requestBody = {
       contents: [
         {
@@ -333,14 +439,22 @@ class GeminiAdapter implements VLMService {
         // Validate against schema
         const validation = validateStructuredDiagram(parsed);
         if (!validation.valid) {
-          if (validation.partial && (validation.partial.elements.length > 0 || validation.partial.relationships.length > 0)) {
+          // Check elements safely, provide default empty array if undefined
+          if (validation.partial && (validation.partial.elements?.length ?? 0) > 0) {
             console.warn('[Gemini] Partial diagram parsed with errors:', validation.errors);
-            return validation.partial;
+            // Construct the return object carefully to match VLMServiceResponse type
+            return {
+              analysis_summary: validation.partial.analysis_summary ?? { total_distinct_elements: 0, composition_interpretation: 'Partial parse error' }, // Provide default summary
+              elements: validation.partial.elements ?? [], // Provide default empty array
+              plausibility_check_notes: validation.partial.plausibility_check_notes ?? 'Partial parse error', // Provide default notes
+              vlmProvider: 'gemini' // Add provider to partial response
+            };
           }
           throw new GeneralAPIError('Malformed Gemini output: ' + validation.errors.join('; '));
         }
-        // Cache successful result
-        GEMINI_CACHE.set(imageHash, parsed as StructuredDiagram);
+        // Cache successful result (including description)
+        const finalResponse = { ...parsed, vlmProvider: 'gemini' } as VLMServiceResponse;
+        GEMINI_CACHE.set(imageHash, finalResponse);
         // Enforce LRU max size
         if (GEMINI_CACHE.size > GEMINI_CACHE_MAX) {
           const firstKey = GEMINI_CACHE.keys().next().value;
@@ -348,7 +462,7 @@ class GeminiAdapter implements VLMService {
             GEMINI_CACHE.delete(firstKey);
           }
         }
-        return parsed as StructuredDiagram;
+        return finalResponse;
       } catch (err: unknown) {
         lastError = err;
         // Only retry on transient errors
@@ -409,7 +523,13 @@ function getVLMService(prefs: Preferences): VLMService {
     //   return new ClaudeAdapter(prefs.claudeApiKey);
     // }
    console.warn("No suitable VLM API key found in preferences. Using dummy service.");
-   return { analyzeImage: async () => ({ elements: [], relationships: [] }) } // Dummy fallback
+   // Dummy fallback needs to match the new return type
+   return { analyzeImage: async () => ({ 
+     analysis_summary: { total_distinct_elements: 0, composition_interpretation: 'Dummy response' }, 
+     elements: [],
+     plausibility_check_notes: 'Dummy response',
+     vlmProvider: 'dummy' // Add provider to dummy response
+   }) } 
 }
 
 /**

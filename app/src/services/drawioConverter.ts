@@ -59,30 +59,53 @@ export function generateDrawioXml(
   // Use the smaller scale factor to maintain aspect ratio and fit within target bounds
   const scale = Math.min(scaleX, scaleY);
 
-  // Effective canvas height for Y-flipping after scaling
-  const effectiveCanvasHeight = originalDimensions.height * scale + CANVAS_MARGIN * 2; 
+  // Effective canvas height for Y-flipping after scaling - REMOVED
+  // const scaledContentHeight = originalDimensions.height * scale;
 
   const elementsXml = shapes.map(element => {
     // Scale coordinates and dimensions
     const scaledX = element.boundingBox.x * scale + CANVAS_MARGIN;
-    const scaledY = element.boundingBox.y * scale + CANVAS_MARGIN;
+    const scaledY = element.boundingBox.y * scale; // Scale Y without margin first
     const scaledWidth = element.boundingBox.width * scale;
     const scaledHeight = element.boundingBox.height * scale;
 
-    // Coordinate transformation (Y-flip)
+    // Coordinate transformation (Y-flip) - REMOVED as v2 prompt provides y-down coords
     const drawioX = scaledX;
-    const drawioY = effectiveCanvasHeight - (scaledY + scaledHeight); // Flip Y based on scaled canvas height
+    // Flip based on scaled content height, then add margin - OLD
+    // const drawioY = (scaledContentHeight - (scaledY + scaledHeight)) + CANVAS_MARGIN;
+    // NEW: Use scaled Y directly and add margin
+    const drawioY = scaledY + CANVAS_MARGIN;
 
     const drawioId = `el-${element.id}`; // Prefix element IDs
 
     let styleString = '';
+    // Base shape style
+    switch (element.type) {
+        case 'rectangle': styleString += 'shape=rectangle;'; break;
+        case 'ellipse':
+        case 'circle': styleString += 'shape=ellipse;'; break;
+        case 'triangle': styleString += 'shape=triangle;'; break;
+        case 'parallelogram': styleString += 'shape=parallelogram;'; break;
+        case 'rhombus': styleString += 'shape=rhombus;'; break;
+        case 'text': styleString += 'text;html=1;resizable=0;points=[];align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;'; break;
+        case 'line': styleString += 'shape=line;endArrow=none;'; break;
+        case 'arrow': styleString += 'shape=flexArrow;'; break; // Using flexArrow for better arrow control
+        default: styleString += 'shape=rectangle;'; break;
+    }
+
+    // Additional styles
     if (element.style?.color) styleString += `strokeColor=${element.style.color};`;
     if (element.style?.fill) styleString += `fillColor=${element.style.fill};`;
     if (element.style?.lineStyle && element.style.lineStyle !== 'solid') {
       styleString += `dashed=${element.style.lineStyle === 'dashed' ? 1 : 0};`;
+      if (element.style.lineStyle === 'dotted') styleString += 'dashPattern=1 4;';
     }
+    if (element.style?.fontWeight === 'bold') styleString += 'fontStyle=1;';
+    if (typeof element.style?.opacity === 'number') styleString += `opacity=${Math.round(element.style.opacity * 100)};`;
 
-    // Add orientation for relevant shapes, swapping north/south due to y-flip
+    // Orientation - Use rotation based on orientation_angle
+    // Remove old direction logic
+    /*
     if (element.type === 'triangle' || element.type === 'arrow') {
       switch (element.orientation) {
         case 'north': styleString += 'direction=south;'; break;
@@ -92,12 +115,19 @@ export function generateDrawioXml(
         default: styleString += 'direction=east;'; break;
       }
     }
+    */
+    // Apply rotation if angle is significant (Drawio rotation is clockwise, angle is counter-clockwise)
+    if (typeof element.orientation_angle === 'number' && Math.abs(element.orientation_angle) > 1) { // Threshold to avoid tiny rotations
+      styleString += `rotation=${-element.orientation_angle};`;
+    } else if (element.type === 'triangle' && (element.orientation_angle === undefined || Math.abs(element.orientation_angle) <= 1)) {
+      // Default triangle rotation to point upwards if angle is 0 or not provided
+      styleString += `rotation=-90;`;
+    }
 
     const label = escapeXml(element.type === 'text' ? (element as TextShape).text || '' : '');
     const geometry = `<mxGeometry x="${drawioX}" y="${drawioY}" width="${scaledWidth}" height="${scaledHeight}" as="geometry" />`;
-    const cellType = element.type === 'text' ? 'text;html=1;resizable=0;points=[];align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;' : `shape=${element.type};`;
 
-    return `<mxCell id="${drawioId}" value="${label}" style="${cellType}${styleString}" vertex="1" parent="1">
+    return `<mxCell id="${drawioId}" value="${label}" style="${styleString.replace(/;$/, '')}" vertex="1" parent="1">
       ${geometry}
     </mxCell>`;
   }).join('\n');
@@ -113,15 +143,19 @@ export function generateDrawioXml(
           <Array as="points">
             ${rel.waypoints.map(wp => {
               const scaledWpX = wp.x * scale + CANVAS_MARGIN;
-              const scaledWpY = wp.y * scale + CANVAS_MARGIN;
-              const drawioWpY = effectiveCanvasHeight - scaledWpY; // Flip Y
+              const scaledWpY = wp.y * scale; // Scale Y without margin first
+              // Flip based on scaled content height, then add margin - OLD
+              // const drawioWpY = (scaledContentHeight - scaledWpY) + CANVAS_MARGIN;
+              // NEW: Use scaled Y directly and add margin
+              const drawioWpY = scaledWpY + CANVAS_MARGIN;
               return `<mxPoint x="${scaledWpX}" y="${drawioWpY}" />`;
             }).join('\n')}
           </Array>
         </mxGeometry>`
       : '<mxGeometry relative="1" as="geometry" />';
 
-    const relStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;';
+    // Add endArrow=none and startArrow=none to hide default arrows
+    const relStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;';
 
     return `<mxCell id="${drawioRelId}" style="${relStyle}" edge="1" parent="1" source="${sourceIdPrefixed}" target="${targetIdPrefixed}">
       ${waypointsXml}
@@ -138,7 +172,7 @@ export function generateDrawioXml(
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         ${elementsXml}
-        ${relationshipsXml}
+        {/* ${relationshipsXml} // Commented out to hide relationship lines */}
       </root>
     </mxGraphModel>
   </diagram>
@@ -173,8 +207,9 @@ export function encodeDrawioXml(xml: string): string {
   }
   // Base64 encode
   const base64Encoded = btoa(binaryString);
-  // URL encode the result
-  return encodeURIComponent(base64Encoded);
+  // URL encode the result - REMOVED as DrawioViewer likely expects raw base64
+  // return encodeURIComponent(base64Encoded);
+  return base64Encoded; // Return raw base64
 }
 
 // TODO: Add tests for Drawio XML generation 
