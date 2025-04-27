@@ -5,9 +5,10 @@ const ACCEPTED_TYPES = ['image/jpeg', 'image/png'];
 
 interface ImageUploadProps {
   onImageSelected?: (file: File, dataUrl: string) => void;
+  onReset?: () => void;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected, onReset }) => {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -72,6 +73,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
     setPreview(null);
     setError(null);
     if (inputRef.current) inputRef.current.value = '';
+    if (onReset) onReset();
   };
 
   return (

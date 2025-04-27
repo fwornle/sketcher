@@ -8,17 +8,7 @@ const Home: React.FC = () => {
   const vlmService = useVLMService();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [diagram, setDiagram] = useState<StructuredDiagram | null>({
-    elements: [
-      {
-        id: '1',
-        type: 'rectangle',
-        boundingBox: { x: 100, y: 100, width: 120, height: 80 },
-        style: { color: '#ff0000', fill: '#ffff00' },
-      }
-    ],
-    relationships: []
-  });
+  const [diagram, setDiagram] = useState<StructuredDiagram | null>(null);
 
   const handleImageSelected = async (_file: File, dataUrl: string) => {
     setError(null);
@@ -38,7 +28,7 @@ const Home: React.FC = () => {
     <div>
       <h1>Welcome to Sketcher</h1>
       <p>Turn your whiteboard sketches into beautiful drawio diagrams.</p>
-      <ImageUpload onImageSelected={handleImageSelected} />
+      <ImageUpload onImageSelected={handleImageSelected} onReset={() => { setDiagram(null); setError(null); }} />
       {loading && <div className="alert alert-info mt-3">Analyzing image with Gemini...</div>}
       {error && <div className="alert alert-danger mt-3">{error}</div>}
       {diagram && (
