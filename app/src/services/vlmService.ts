@@ -221,6 +221,29 @@ export function validateStructuredDiagram(obj: unknown): { valid: boolean, error
 }
 
 /**
+ * Utility to hash image data for cache key (SHA-256, base64).
+ * Uses browser SubtleCrypto API.
+ */
+async function hashImageData(imageDataUrl: string): Promise<string> {
+  // Only hash the base64 part for efficiency
+  const [, base64 = ''] = imageDataUrl.split(',');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(base64);
+  const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+  // Convert buffer to base64
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashString = btoa(String.fromCharCode(...hashArray));
+  return hashString;
+}
+
+/**
+ * Simple in-memory LRU cache for Gemini results (max 50 entries).
+ * Keyed by image hash. Exposed for testing.
+ */
+const GEMINI_CACHE = new Map<string, StructuredDiagram>();
+const GEMINI_CACHE_MAX = 50;
+
+/**
  * GeminiAdapter implements the VLMService interface for Google's Gemini Vision API.
  * Handles authentication, request formatting, response parsing, error handling, and logging.
  *
@@ -243,10 +266,21 @@ class GeminiAdapter implements VLMService {
 
   /**
    * Analyze a whiteboard image and return a structured diagram.
+   * Uses in-memory LRU cache to avoid redundant API calls for the same image.
    * @param imageDataUrl Image as a base64 data URL (PNG recommended)
    * @returns Promise resolving to a StructuredDiagram
    */
   async analyzeImage(imageDataUrl: string): Promise<StructuredDiagram> {
+    const imageHash = await hashImageData(imageDataUrl);
+    // Check cache first
+    if (GEMINI_CACHE.has(imageHash)) {
+      // Move to end (LRU)
+      const cached = GEMINI_CACHE.get(imageHash)!;
+      GEMINI_CACHE.delete(imageHash);
+      GEMINI_CACHE.set(imageHash, cached);
+      console.info('[Gemini] Cache hit for image');
+      return cached;
+    }
     const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + this.apiKey;
     const base64 = imageDataUrl.split(',')[1];
     const prompt = buildGeminiPrompt();
@@ -304,6 +338,15 @@ class GeminiAdapter implements VLMService {
             return validation.partial;
           }
           throw new GeneralAPIError('Malformed Gemini output: ' + validation.errors.join('; '));
+        }
+        // Cache successful result
+        GEMINI_CACHE.set(imageHash, parsed as StructuredDiagram);
+        // Enforce LRU max size
+        if (GEMINI_CACHE.size > GEMINI_CACHE_MAX) {
+          const firstKey = GEMINI_CACHE.keys().next().value;
+          if (typeof firstKey === 'string') {
+            GEMINI_CACHE.delete(firstKey);
+          }
         }
         return parsed as StructuredDiagram;
       } catch (err: unknown) {
@@ -380,4 +423,7 @@ export function useVLMService(): VLMService {
     const { preferences } = usePreferences();
     // In a real app, you might memoize this based on preferences
     return getVLMService(preferences);
-} 
+}
+
+// Expose cache for testing/inspection
+export { GEMINI_CACHE, hashImageData }; 
