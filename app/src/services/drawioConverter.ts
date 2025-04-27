@@ -62,7 +62,12 @@ export function generateDrawioXml(
   // Effective canvas height for Y-flipping after scaling - REMOVED
   // const scaledContentHeight = originalDimensions.height * scale;
 
-  const elementsXml = shapes.map(element => {
+  // Separate shapes into triangles and non-triangles for Z-ordering
+  const nonTriangles = shapes.filter(s => s.type !== 'triangle');
+  const triangles = shapes.filter(s => s.type === 'triangle');
+
+  // Generate XML for non-triangles first
+  const nonTriangleXml = nonTriangles.map(element => {
     // Scale coordinates and dimensions
     const scaledX = element.boundingBox.x * scale + CANVAS_MARGIN;
     const scaledY = element.boundingBox.y * scale; // Scale Y without margin first
@@ -86,6 +91,7 @@ export function generateDrawioXml(
         case 'circle': styleString += 'shape=ellipse;'; break;
         case 'triangle': styleString += 'shape=triangle;'; break;
         case 'parallelogram': styleString += 'shape=parallelogram;'; break;
+        case 'trapezoid': styleString += 'shape=trapezoid;'; break;
         case 'rhombus': styleString += 'shape=rhombus;'; break;
         case 'text': styleString += 'text;html=1;resizable=0;points=[];align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;'; break;
         case 'line': styleString += 'shape=line;endArrow=none;'; break;
@@ -132,33 +138,45 @@ export function generateDrawioXml(
     </mxCell>`;
   }).join('\n');
 
-  const relationshipsXml = relationships.map(rel => {
-    const drawioRelId = `rel-${rel.id}`;
-    const sourceIdPrefixed = `el-${rel.sourceId}`;
-    const targetIdPrefixed = `el-${rel.targetId}`;
+  // Generate XML for triangles next (so they render on top)
+  const triangleXml = triangles.map(element => {
+    // Scale coordinates and dimensions
+    const scaledX = element.boundingBox.x * scale + CANVAS_MARGIN;
+    const scaledY = element.boundingBox.y * scale; // Scale Y without margin first
+    const scaledWidth = element.boundingBox.width * scale;
+    const scaledHeight = element.boundingBox.height * scale;
 
-    // Transform waypoints: scale and flip Y
-    const waypointsXml = rel.waypoints
-      ? `<mxGeometry relative="1" as="geometry">
-          <Array as="points">
-            ${rel.waypoints.map(wp => {
-              const scaledWpX = wp.x * scale + CANVAS_MARGIN;
-              const scaledWpY = wp.y * scale; // Scale Y without margin first
-              // Flip based on scaled content height, then add margin - OLD
-              // const drawioWpY = (scaledContentHeight - scaledWpY) + CANVAS_MARGIN;
-              // NEW: Use scaled Y directly and add margin
-              const drawioWpY = scaledWpY + CANVAS_MARGIN;
-              return `<mxPoint x="${scaledWpX}" y="${drawioWpY}" />`;
-            }).join('\n')}
-          </Array>
-        </mxGeometry>`
-      : '<mxGeometry relative="1" as="geometry" />';
+    // Coordinate transformation
+    const drawioX = scaledX;
+    const drawioY = scaledY + CANVAS_MARGIN;
 
-    // Add endArrow=none and startArrow=none to hide default arrows
-    const relStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;';
+    const drawioId = `el-${element.id}`; // Prefix element IDs
 
-    return `<mxCell id="${drawioRelId}" style="${relStyle}" edge="1" parent="1" source="${sourceIdPrefixed}" target="${targetIdPrefixed}">
-      ${waypointsXml}
+    let styleString = element.type === 'trapezoid' ? 'shape=trapezoid;' : 'shape=triangle;'; // Start with correct style
+
+    // Additional styles
+    if (element.style?.color) styleString += `strokeColor=${element.style.color};`;
+    if (element.style?.fill) styleString += `fillColor=${element.style.fill};`;
+    if (element.style?.lineStyle && element.style.lineStyle !== 'solid') {
+      styleString += `dashed=${element.style.lineStyle === 'dashed' ? 1 : 0};`;
+      if (element.style.lineStyle === 'dotted') styleString += 'dashPattern=1 4;';
+    }
+    if (element.style?.fontWeight === 'bold') styleString += 'fontStyle=1;';
+    if (typeof element.style?.opacity === 'number') styleString += `opacity=${Math.round(element.style.opacity * 100)};`;
+
+    // Apply rotation
+    if (typeof element.orientation_angle === 'number' && Math.abs(element.orientation_angle) > 1) {
+      styleString += `rotation=${-element.orientation_angle};`;
+    } else if (element.type === 'triangle' && (element.orientation_angle === undefined || Math.abs(element.orientation_angle) <= 1)) {
+      // Default triangle rotation to point upwards
+      styleString += `rotation=-90;`;
+    }
+
+    const label = escapeXml(''); // Triangles from VLM unlikely to have labels directly
+    const geometry = `<mxGeometry x="${drawioX}" y="${drawioY}" width="${scaledWidth}" height="${scaledHeight}" as="geometry" />`;
+
+    return `<mxCell id="${drawioId}" value="${label}" style="${styleString.replace(/;$/, '')}" vertex="1" parent="1">
+      ${geometry}
     </mxCell>`;
   }).join('\n');
 
@@ -171,8 +189,8 @@ export function generateDrawioXml(
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        ${elementsXml}
-        {/* ${relationshipsXml} // Commented out to hide relationship lines */}
+        ${nonTriangleXml} 
+        ${triangleXml} 
       </root>
     </mxGraphModel>
   </diagram>

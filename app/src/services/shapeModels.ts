@@ -43,7 +43,8 @@ export type ShapeType =
   | 'line'
   | 'text'
   | 'parallelogram'
-  | 'rhombus';
+  | 'rhombus'
+  | 'trapezoid';
 
 export interface Rectangle extends Shape {
   type: 'rectangle';
@@ -86,6 +87,11 @@ export interface Parallelogram extends Shape {
 
 export interface Rhombus extends Shape {
   type: 'rhombus';
+  text?: string;
+}
+
+export interface Trapezoid extends Shape {
+  type: 'trapezoid';
   text?: string;
 }
 

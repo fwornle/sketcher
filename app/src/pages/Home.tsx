@@ -138,10 +138,17 @@ const Home: React.FC = () => {
       {diagramData && imageDimensions && (
         <>
           <h3 className="mt-4">Diagram Preview</h3>
-          <DrawioViewer
-            xml={encodeDrawioXml(generateDrawioXml(diagramData.shapes, diagramData.relationships, imageDimensions))}
-            style={{ height: 600, marginTop: 24 }}
-          />
+          {(() => {
+            console.log('Shapes sent to Drawio:', diagramData.shapes);
+            const rawXml = generateDrawioXml(diagramData.shapes, diagramData.relationships, imageDimensions);
+            console.log('Raw Drawio XML sent to Drawio:', rawXml);
+            return (
+              <DrawioViewer
+                xml={encodeDrawioXml(rawXml)}
+                style={{ height: 600, marginTop: 24 }}
+              />
+            );
+          })()}
           {/* TODO: Add export/share controls here */}
         </>
       )}
