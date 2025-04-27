@@ -9,14 +9,17 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diagram, setDiagram] = useState<StructuredDiagram | null>(null);
+  const [showExtracted, setShowExtracted] = useState(false);
 
   const handleImageSelected = async (_file: File, dataUrl: string) => {
     setError(null);
     setDiagram(null);
+    setShowExtracted(false);
     setLoading(true);
     try {
       const result = await vlmService.analyzeImage(dataUrl);
       setDiagram(result);
+      setShowExtracted(false);
     } catch (err) {
       setError((err instanceof Error) ? err.message : 'Failed to analyze image.');
     } finally {
@@ -33,8 +36,20 @@ const Home: React.FC = () => {
       {error && <div className="alert alert-danger mt-3">{error}</div>}
       {diagram && (
         <div className="alert alert-success mt-3">
-          <strong>Diagram extracted!</strong>
-          <pre style={{ maxHeight: 300, overflow: 'auto', fontSize: 12 }}>{JSON.stringify(diagram, null, 2)}</pre>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <strong>Diagram extracted!</strong>
+            <button
+              className="btn btn-sm btn-outline-secondary ms-2"
+              onClick={() => setShowExtracted(v => !v)}
+              aria-expanded={showExtracted}
+              aria-controls="extracted-json-box"
+            >
+              {showExtracted ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          {showExtracted && (
+            <pre id="extracted-json-box" style={{ maxHeight: 300, overflow: 'auto', fontSize: 12, marginTop: 8 }}>{JSON.stringify(diagram, null, 2)}</pre>
+          )}
         </div>
       )}
       {diagram && (
