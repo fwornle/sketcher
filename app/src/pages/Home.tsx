@@ -146,19 +146,33 @@ const Home: React.FC = () => {
           <Modal.Title>VLM API Keys</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Form id="api-key-form" onSubmit={handleSave}>
-            {VLM_LIST.map(vlm => (
-              <Form.Group className="mb-3" controlId={`apiKey-${vlm.key}`} key={vlm.key}>
-                <Form.Label>{vlm.label}</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={apiKeys[vlm.key] || ''}
-                  onChange={e => setApiKeys(keys => ({ ...keys, [vlm.key]: e.target.value }))}
-                  placeholder={`API Key for ${vlm.label}`}
-                  autoComplete="off"
-                />
-              </Form.Group>
-            ))}
+          <Form id="api-key-form" onSubmit={handleSave} autoComplete="off">
+            {VLM_LIST.map(vlm => {
+              const hasKey = !!apiKeys[vlm.key];
+              return (
+                <Form.Group className="mb-3" controlId={`apiKey-${vlm.key}`} key={vlm.key}>
+                  <Form.Label>{vlm.label}</Form.Label>
+                  <Form.Control
+                    type="password"
+                    value={hasKey ? '••••••••' : ''}
+                    onChange={e => {
+                      // If the field is being edited, always treat as new input
+                      const val = e.target.value;
+                      setApiKeys(keys => ({ ...keys, [vlm.key]: val === '' || val === '••••••••' ? '' : val }));
+                    }}
+                    placeholder={`API Key for ${vlm.label}`}
+                    autoComplete="new-password"
+                    onFocus={e => {
+                      // Clear the field for new input if a key is already set
+                      if (apiKeys[vlm.key]) {
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  {hasKey && <Form.Text muted>API key is set. Enter a new value to overwrite.</Form.Text>}
+                </Form.Group>
+              );
+            })}
           </Form>
         </Modal.Body>
         <Modal.Footer>
