@@ -1,12 +1,24 @@
 import React, { useState } from 'react';
 import ImageUpload from '../components/ImageUpload';
 import { useVLMService, StructuredDiagram } from '../services/vlmService';
+import { DrawioViewer } from '../components/DrawioViewer';
+import { generateDrawioXml } from '../services/drawioConverter';
 
 const Home: React.FC = () => {
   const vlmService = useVLMService();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [diagram, setDiagram] = useState<StructuredDiagram | null>(null);
+  const [diagram, setDiagram] = useState<StructuredDiagram | null>({
+    elements: [
+      {
+        id: '1',
+        type: 'rectangle',
+        boundingBox: { x: 100, y: 100, width: 120, height: 80 },
+        style: { color: '#ff0000', fill: '#ffff00' },
+      }
+    ],
+    relationships: []
+  });
 
   const handleImageSelected = async (_file: File, dataUrl: string) => {
     setError(null);
@@ -34,6 +46,16 @@ const Home: React.FC = () => {
           <strong>Diagram extracted!</strong>
           <pre style={{ maxHeight: 300, overflow: 'auto', fontSize: 12 }}>{JSON.stringify(diagram, null, 2)}</pre>
         </div>
+      )}
+      {diagram && (
+        <>
+          <h3 className="mt-4">Diagram Preview</h3>
+          <DrawioViewer
+            xml={generateDrawioXml(diagram.elements, diagram.relationships)}
+            style={{ height: 600, marginTop: 24 }}
+          />
+          {/* TODO: Add export/share controls here */}
+        </>
       )}
     </div>
   );
