@@ -202,7 +202,28 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
   });
   */
 
-  return { compositionDescription, shapes, relationships, errors };
+  // --- Post-process relationships: Correct 'above' relationships based on bounding box geometry ---
+  // Remove existing 'above' relationships
+  const filteredRelationships = relationships.filter(rel => rel.type !== 'above');
+  // For each shape, check if it is above another and add 'above' relationship if so
+  for (let i = 0; i < shapes.length; i++) {
+    for (let j = 0; j < shapes.length; j++) {
+      if (i === j) continue;
+      const a = shapes[i];
+      const b = shapes[j];
+      // If bottom of a is above top of b (with a small tolerance)
+      if ((a.boundingBox.y + a.boundingBox.height) <= b.boundingBox.y + 1) {
+        filteredRelationships.push({
+          id: generateRelId(),
+          type: 'above',
+          sourceId: a.id,
+          targetId: b.id
+        });
+      }
+    }
+  }
+
+  return { compositionDescription, shapes, relationships: filteredRelationships, errors };
 }
 
 /**
