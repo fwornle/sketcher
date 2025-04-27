@@ -3,6 +3,8 @@ const STORAGE_KEY = 'sketcher_prefs';
 export interface Preferences {
   geminiApiKey?: string;
   gemma4ApiKey?: string;
+  claudeApiKey?: string;
+  gpt4oApiKey?: string;
   theme?: 'light' | 'dark' | 'system';
   exportFormat?: 'drawio' | 'svg' | 'png';
 }

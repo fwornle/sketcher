@@ -225,25 +225,6 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
     }
   }
 
-  // --- Post-process: Snap triangle base to pedestal top if nearly aligned ---
-  const TOLERANCE = 2;
-  shapes.forEach(shape => {
-    if (shape.type === 'triangle') {
-      const triangleBottom = shape.boundingBox.y + shape.boundingBox.height;
-      const pedestal = shapes.find(
-        s => s.type === 'rectangle' &&
-          Math.abs(s.boundingBox.y - triangleBottom) <= TOLERANCE &&
-          // horizontally overlapping
-          !(s.boundingBox.x > shape.boundingBox.x + shape.boundingBox.width ||
-            s.boundingBox.x + s.boundingBox.width < shape.boundingBox.x)
-      );
-      if (pedestal) {
-        // Snap triangle's bottom to pedestal's top
-        shape.boundingBox.height = pedestal.boundingBox.y - shape.boundingBox.y;
-      }
-    }
-  });
-
   // --- Adjust triangle bounding boxes for Drawio ---
   shapes.forEach(shape => {
     if (shape.type === 'triangle') {

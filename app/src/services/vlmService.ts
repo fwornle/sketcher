@@ -1,5 +1,7 @@
 import { usePreferences } from '../context/PreferencesContext';
 import { Preferences } from './storage';
+import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
 // Renamed original BoundingBox to avoid conflict
 export interface BoundingBoxXYWH {
@@ -491,18 +493,181 @@ class GeminiAdapter implements VLMService {
   }
 }
 
-/* // Comment out unused ClaudeAdapter for now
+/* ClaudeAdapter: Implements VLMService for Anthropic Claude Vision API */
 class ClaudeAdapter implements VLMService {
-   // Similar implementation for Claude
-   private apiKey: string; // Likely needed
-   constructor(apiKey: string) { this.apiKey = apiKey }
-   async analyzeImage(imageDataUrl: string): Promise<StructuredDiagram> {
-      console.log('Calling Claude...', imageDataUrl.substring(0, 50) + '...'); // Use imageDataUrl
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return { elements: [], relationships: [] };
-   }
+  private apiKey: string;
+  private maxRetries = 3;
+  private baseDelay = 500; // ms
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  // Helper to extract base64 PNG bytes from a data URL
+  private dataUrlToBase64Png(dataUrl: string): string {
+    if (!dataUrl.startsWith('data:image/png;base64,')) {
+      throw new Error('Only PNG images are supported for Claude Vision');
+    }
+    return dataUrl.replace(/^data:image\/png;base64,/, '');
+  }
+
+  async analyzeImage(imageDataUrl: string, _vlmType: string = 'claude', apiKey?: string): Promise<VLMServiceResponse> {
+    const imageBase64 = this.dataUrlToBase64Png(imageDataUrl);
+    const prompt = buildGeminiPrompt('v2'); // Use the same prompt for consistency
+    const anthropic = new Anthropic({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+      try {
+        const msg = await anthropic.messages.create({
+          model: 'claude-3-opus-20240229',
+          max_tokens: 4096,
+          temperature: 0.2,
+          system: 'You are an expert visual analysis assistant.',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: 'image/png',
+                    data: imageBase64,
+                  },
+                },
+                { type: 'text', text: prompt },
+              ],
+            },
+          ],
+        });
+        const text = msg.content?.[0]?.text || '';
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new GeneralAPIError('No JSON found in Claude response.');
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Validate against schema
+        const validation = validateStructuredDiagram(parsed);
+        if (!validation.valid) {
+          if (validation.partial && (validation.partial.elements?.length ?? 0) > 0) {
+            return {
+              analysis_summary: validation.partial.analysis_summary ?? { total_distinct_elements: 0, composition_interpretation: 'Partial parse error' },
+              elements: validation.partial.elements ?? [],
+              plausibility_check_notes: validation.partial.plausibility_check_notes ?? 'Partial parse error',
+              vlmProvider: 'claude',
+            };
+          }
+          throw new GeneralAPIError('Malformed Claude output: ' + validation.errors.join('; '));
+        }
+        return { ...parsed, vlmProvider: 'claude' } as VLMServiceResponse;
+      } catch (err: unknown) {
+        lastError = err;
+        // Only retry on transient errors
+        if (err instanceof GeneralAPIError && err.message.includes('Transient')) {
+          const delay = this.baseDelay * Math.pow(2, attempt);
+          await new Promise(res => setTimeout(res, delay));
+          continue;
+        }
+        break;
+      }
+    }
+    if (lastError instanceof AuthenticationError || lastError instanceof RateLimitError || lastError instanceof QuotaExceededError) {
+      throw lastError;
+    }
+    let message = 'Failed to analyze image with Claude after multiple attempts.';
+    if (lastError instanceof GeneralAPIError) {
+      message = lastError.message;
+    } else if (lastError instanceof Error) {
+      message = lastError.message;
+    } else if (typeof lastError === 'string') {
+      message = lastError;
+    }
+    throw new GeneralAPIError(message);
+  }
 }
-*/
+
+// Gpt4oAdapter: Implements VLMService for OpenAI GPT-4o Vision
+class Gpt4oAdapter implements VLMService {
+  private apiKey: string;
+  private maxRetries = 3;
+  private baseDelay = 500; // ms
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  // Helper to extract base64 PNG bytes from a data URL
+  private dataUrlToBase64Png(dataUrl: string): string {
+    if (!dataUrl.startsWith('data:image/png;base64,')) {
+      throw new Error('Only PNG images are supported for GPT-4o Vision');
+    }
+    return dataUrl.replace(/^data:image\/png;base64,/, '');
+  }
+
+  async analyzeImage(imageDataUrl: string, _vlmType: string = 'gpt4o', apiKey?: string): Promise<VLMServiceResponse> {
+    const openai = new OpenAI({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
+    const imageBase64 = this.dataUrlToBase64Png(imageDataUrl);
+    const prompt = buildGeminiPrompt('v2'); // Use the same prompt for consistency
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          max_tokens: 4096,
+          temperature: 0.2,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/png;base64,${imageBase64}`,
+                  },
+                },
+                { type: 'text', text: prompt },
+              ],
+            },
+          ],
+        });
+        const text = response.choices?.[0]?.message?.content || '';
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new GeneralAPIError('No JSON found in GPT-4o response.');
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Validate against schema
+        const validation = validateStructuredDiagram(parsed);
+        if (!validation.valid) {
+          if (validation.partial && (validation.partial.elements?.length ?? 0) > 0) {
+            return {
+              analysis_summary: validation.partial.analysis_summary ?? { total_distinct_elements: 0, composition_interpretation: 'Partial parse error' },
+              elements: validation.partial.elements ?? [],
+              plausibility_check_notes: validation.partial.plausibility_check_notes ?? 'Partial parse error',
+              vlmProvider: 'gpt4o',
+            };
+          }
+          throw new GeneralAPIError('Malformed GPT-4o output: ' + validation.errors.join('; '));
+        }
+        return { ...parsed, vlmProvider: 'gpt4o' } as VLMServiceResponse;
+      } catch (err: unknown) {
+        lastError = err;
+        // Only retry on transient errors
+        if (err instanceof GeneralAPIError && err.message.includes('Transient')) {
+          const delay = this.baseDelay * Math.pow(2, attempt);
+          await new Promise(res => setTimeout(res, delay));
+          continue;
+        }
+        break;
+      }
+    }
+    let message = 'Failed to analyze image with GPT-4o after multiple attempts.';
+    if (lastError instanceof GeneralAPIError) {
+      message = lastError.message;
+    } else if (lastError instanceof Error) {
+      message = lastError.message;
+    } else if (typeof lastError === 'string') {
+      message = lastError;
+    }
+    throw new GeneralAPIError(message);
+  }
+}
 
 /**
  * Factory function to select the appropriate VLMService implementation based on user preferences.
@@ -513,20 +678,21 @@ class ClaudeAdapter implements VLMService {
  * @returns VLMService instance (GeminiAdapter, ClaudeAdapter, etc.)
  */
 function getVLMService(prefs: Preferences): VLMService {
-   // Example: Add logic for additional models here
    if (prefs.geminiApiKey) {
        return new GeminiAdapter(prefs.geminiApiKey);
    }
-    // if (prefs.claudeApiKey) {
-    //   return new ClaudeAdapter(prefs.claudeApiKey);
-    // }
+   if (prefs.claudeApiKey) {
+     return new ClaudeAdapter(prefs.claudeApiKey);
+   }
+   if (prefs.gpt4oApiKey) {
+     return new Gpt4oAdapter(prefs.gpt4oApiKey);
+   }
    console.warn("No suitable VLM API key found in preferences. Using dummy service.");
-   // Dummy fallback needs to match the new return type
    return { analyzeImage: async () => ({ 
      analysis_summary: { total_distinct_elements: 0, composition_interpretation: 'Dummy response' }, 
      elements: [],
      plausibility_check_notes: 'Dummy response',
-     vlmProvider: 'dummy' // Add provider to dummy response
+     vlmProvider: 'dummy' 
    }) } 
 }
 
@@ -571,12 +737,11 @@ function getVlmAdapter(vlmType: string): VLMService {
   console.log(`Selecting adapter for VLM type: ${vlmType}`);
   switch (vlmType) {
     case 'gemini':
-      return new GeminiAdapter();
-    // Add cases for other VLMs here, returning their respective adapters
-    // case 'gpt4o':
-    //   return new OpenAIAdapter();
-    // case 'claude':
-    //   return new ClaudeAdapter();
+      return new GeminiAdapter('');
+    case 'claude':
+      return new ClaudeAdapter('');
+    case 'gpt4o':
+      return new Gpt4oAdapter('');
     default:
       console.warn(`No adapter found for VLM type: ${vlmType}, using dummy adapter.`);
       return new DummyVLMAdapter();
