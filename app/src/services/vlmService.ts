@@ -283,9 +283,6 @@ export function validateStructuredDiagram(obj: unknown): { valid: boolean, error
   if (!Array.isArray(o.elements)) {
     errors.push('Missing or invalid elements array.');
   }
-  if (!Array.isArray(o.relationships)) {
-    errors.push('Missing or invalid relationships array.');
-  }
   // Type guards
   function isDiagramElement(el: unknown): el is DiagramElement {
     if (!el || typeof el !== 'object') return false;

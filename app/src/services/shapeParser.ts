@@ -169,7 +169,9 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
             case 'contains':
             case 'part_of':
               relationshipType = 'contains'; break;
-            case 'above': relationshipType = 'above'; break;
+            case 'above':
+            case 'on': // Map 'on' to 'above'
+              relationshipType = 'above'; break;
             case 'below': relationshipType = 'below'; break;
             case 'left_of': relationshipType = 'left-of'; break;
             case 'right_of': relationshipType = 'right-of'; break;
@@ -222,6 +224,50 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
       }
     }
   }
+
+  // --- Post-process: Snap triangle base to pedestal top if nearly aligned ---
+  const TOLERANCE = 2;
+  shapes.forEach(shape => {
+    if (shape.type === 'triangle') {
+      const triangleBottom = shape.boundingBox.y + shape.boundingBox.height;
+      const pedestal = shapes.find(
+        s => s.type === 'rectangle' &&
+          Math.abs(s.boundingBox.y - triangleBottom) <= TOLERANCE &&
+          // horizontally overlapping
+          !(s.boundingBox.x > shape.boundingBox.x + shape.boundingBox.width ||
+            s.boundingBox.x + s.boundingBox.width < shape.boundingBox.x)
+      );
+      if (pedestal) {
+        // Snap triangle's bottom to pedestal's top
+        shape.boundingBox.height = pedestal.boundingBox.y - shape.boundingBox.y;
+      }
+    }
+  });
+
+  // --- Adjust triangle bounding boxes for Drawio ---
+  shapes.forEach(shape => {
+    if (shape.type === 'triangle') {
+      // For a triangle, ensure the bounding box has the base at the bottom edge
+      // Assume the apex is at the top center, base is at the bottom edge
+      // Use the bounding box as detected, but enforce this structure
+      const x1 = shape.boundingBox.x;
+      const y1 = shape.boundingBox.y;
+      const width = shape.boundingBox.width;
+      const height = shape.boundingBox.height;
+      // For Drawio, set y to the apex (top), height to (baseY - apexY)
+      // If the triangle is axis-aligned, this is already correct
+      // But if not, recalculate:
+      // Find the minimum y (apex) and maximum y (base)
+      const apexY = y1;
+      const baseY = y1 + height;
+      shape.boundingBox = {
+        x: x1,
+        y: apexY,
+        width: width,
+        height: baseY - apexY
+      };
+    }
+  });
 
   return { compositionDescription, shapes, relationships: filteredRelationships, errors };
 }
