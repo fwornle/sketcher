@@ -166,8 +166,8 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
             case 'points_to':
               relationshipType = 'connects'; break;
             case 'inside':
-              relationshipType = 'contains'; break; // Map VLM 'inside' to our 'contains'
             case 'contains':
+            case 'part_of':
               relationshipType = 'contains'; break;
             case 'above': relationshipType = 'above'; break;
             case 'below': relationshipType = 'below'; break;

@@ -80,7 +80,7 @@ export interface AnalysisSummary {
 
 // Updated VLMServiceResponse for v2 prompt schema
 export interface VLMServiceResponse {
-  analysis_summary: AnalysisSummary;
+  analysis_summary?: AnalysisSummary;
   elements: DiagramElement[];
   plausibility_check_notes?: string; // Optional as it's a note
   vlmProvider?: string; // Added to identify the VLM used
@@ -88,7 +88,7 @@ export interface VLMServiceResponse {
 }
 
 export interface VLMService {
-  analyzeImage(imageDataUrl: string): Promise<VLMServiceResponse>;
+  analyzeImage(dataUrl: string, vlmType: string, apiKey?: string): Promise<VLMServiceResponse>;
 }
 
 /**
@@ -376,7 +376,8 @@ class GeminiAdapter implements VLMService {
    * @param imageDataUrl Image as a base64 data URL (PNG recommended)
    * @returns Promise resolving to a StructuredDiagram
    */
-  async analyzeImage(imageDataUrl: string): Promise<VLMServiceResponse> {
+  async analyzeImage(imageDataUrl: string, _vlmType: string = 'gemini', apiKey?: string): Promise<VLMServiceResponse> {
+    console.log('[Gemini] Analyzing with Gemini adapter...', { apiKeyProvided: !!apiKey });
     const imageHash = await hashImageData(imageDataUrl);
     // Check cache first
     if (GEMINI_CACHE.has(imageHash)) {
@@ -387,7 +388,7 @@ class GeminiAdapter implements VLMService {
       console.info('[Gemini] Cache hit for image');
       return cached;
     }
-    const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + this.apiKey;
+    const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + (apiKey || this.apiKey);
     const base64 = imageDataUrl.split(',')[1];
     const prompt = buildGeminiPrompt('v2');
     const requestBody = {
@@ -547,3 +548,69 @@ export function useVLMService(): VLMService {
 
 // Expose cache for testing/inspection
 export { GEMINI_CACHE, hashImageData }; 
+
+// Dummy Adapter for fallback/testing
+class DummyVLMAdapter implements VLMService {
+  public async analyzeImage(_dataUrl: string, vlmType: string = 'dummy', _apiKey?: string): Promise<VLMServiceResponse> {
+    console.warn(`[DummyVLM] Using dummy adapter for type: ${vlmType}. Returning mock data.`);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    // Return mock response matching VLMServiceResponse structure
+    return {
+      analysis_summary: { total_distinct_elements: 0, composition_interpretation: 'Dummy response' },
+      elements: [],
+      plausibility_check_notes: 'Dummy response',
+      vlmProvider: 'dummy'
+    };
+  }
+}
+
+// Simple service factory or hook modification needed here
+// For now, just exporting the interface and adapters
+// The actual useVLMService hook needs modification to select the adapter based on vlmType
+
+// Placeholder for a function that might select the adapter
+// This logic should ideally live within useVLMService or a factory
+function getVlmAdapter(vlmType: string): VLMService {
+  console.log(`Selecting adapter for VLM type: ${vlmType}`);
+  switch (vlmType) {
+    case 'gemini':
+      return new GeminiAdapter();
+    // Add cases for other VLMs here, returning their respective adapters
+    // case 'gpt4o':
+    //   return new OpenAIAdapter();
+    // case 'claude':
+    //   return new ClaudeAdapter();
+    default:
+      console.warn(`No adapter found for VLM type: ${vlmType}, using dummy adapter.`);
+      return new DummyVLMAdapter();
+  }
+}
+
+// Example usage (replace current useVLMService hook logic with something like this):
+/*
+export const useVLMService = (vlmType: string): VLMService => {
+  // In a real app, you might memoize this based on vlmType
+  return getVlmAdapter(vlmType);
+};
+*/
+
+// Keeping original export for now until hook is refactored
+// export const useVLMService = (): VLMService => {
+//   // Check environment variable or default to Gemini
+//   const defaultProvider = process.env.REACT_APP_VLM_PROVIDER || 'gemini';
+//   if (defaultProvider === 'dummy') {
+//     return new DummyVLMAdapter();
+//   }
+//   // Add logic for other providers if needed
+//   return new GeminiAdapter();
+// };
+
+// NOTE: The current useVLMService hook needs refactoring to accept
+// vlmType and return the correct adapter instance.
+// The code above provides the interface changes and a basic factory pattern.
+// The actual hook implementation is outside this edit.
+
+// Make factory usable by Home.tsx temporarily
+export { getVlmAdapter }; // Export the factory
+
+export { GeminiAdapter }; // Also export adapter if needed directly

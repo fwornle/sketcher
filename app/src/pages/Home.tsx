@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ImageUpload from '../components/ImageUpload';
-import { useVLMService, VLMServiceResponse } from '../services/vlmService';
+import { VLMServiceResponse, VLMService, getVlmAdapter } from '../services/vlmService';
 import { DrawioViewer } from '../components/DrawioViewer';
 import { generateDrawioXml, encodeDrawioXml } from '../services/drawioConverter';
 import { Shape, ShapeRelationship } from '../services/shapeModels';
 import { parseShapesFromVLMResponse } from '../services/shapeParser';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
 
 interface ImageDimensions {
   width: number;
@@ -16,8 +19,29 @@ interface ParsedDiagram {
   relationships: ShapeRelationship[];
 }
 
+const VLM_LIST = [
+  { key: 'gpt4o', label: 'OpenAI GPT-4o / GPT-4V(ision)' },
+  { key: 'gemini', label: 'Google Gemini Pro Vision' },
+  { key: 'claude', label: 'Anthropic Claude 3.5/Opus' },
+  { key: 'qwen', label: 'Qwen2.5-VL' },
+  { key: 'florence', label: 'Florence-2' },
+  { key: 'cogvlm', label: 'CogVLM (Ollama)' },
+  { key: 'llava', label: 'LLaVA' },
+];
+
+const getStoredVLM = () => localStorage.getItem('selectedVLM') || 'gemini';
+const getStoredApiKeys = () => {
+  try {
+    return JSON.parse(localStorage.getItem('vlmApiKeys') || '{}');
+  } catch {
+    return {};
+  }
+};
+
 const Home: React.FC = () => {
-  const vlmService = useVLMService();
+  // Get a *factory* or *instance selector* instead of a single instance
+  // const vlmServiceFactory = useVLMServiceFactory(); // Assuming a factory hook
+  // For now, we will manually select the adapter
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diagramData, setDiagramData] = useState<ParsedDiagram | null>(null);
@@ -26,6 +50,16 @@ const Home: React.FC = () => {
   const [compositionDescription, setCompositionDescription] = useState<string | null>(null);
   const [rawVlmResponse, setRawVlmResponse] = useState<VLMServiceResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [selectedVLM, setSelectedVLM] = useState<string>(getStoredVLM());
+  const [apiKeys, setApiKeys] = useState<{ [key: string]: string }>(getStoredApiKeys());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('selectedVLM', selectedVLM);
+  }, [selectedVLM]);
+  useEffect(() => {
+    localStorage.setItem('vlmApiKeys', JSON.stringify(apiKeys));
+  }, [apiKeys]);
 
   const handleImageSelected = async (_file: File, dataUrl: string) => {
     setError(null);
@@ -42,7 +76,11 @@ const Home: React.FC = () => {
       const dimensions = { width: img.naturalWidth, height: img.naturalHeight };
       setImageDimensions(dimensions);
       try {
-        const vlmResponse = await vlmService.analyzeImage(dataUrl);
+        // Manually select adapter based on state (replace with factory/hook later)
+        const currentApiKey = apiKeys[selectedVLM];
+        const activeVlmService: VLMService = getVlmAdapter(selectedVLM); // Use the placeholder factory
+
+        const vlmResponse = await activeVlmService.analyzeImage(dataUrl, selectedVLM, currentApiKey);
         setRawVlmResponse(vlmResponse);
 
         const { shapes, relationships, errors: parsingErrors, compositionDescription: desc } = parseShapesFromVLMResponse(vlmResponse);
@@ -95,8 +133,72 @@ const Home: React.FC = () => {
     }
   };
 
+  const renderSettingsModal = () => {
+    const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      console.log('Saving API Keys:', apiKeys);
+      setSettingsOpen(false); // Close modal on save
+    };
+
+    return (
+      <Modal show={settingsOpen} onHide={() => setSettingsOpen(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>VLM API Keys</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form id="api-key-form" onSubmit={handleSave}>
+            {VLM_LIST.map(vlm => (
+              <Form.Group className="mb-3" controlId={`apiKey-${vlm.key}`} key={vlm.key}>
+                <Form.Label>{vlm.label}</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={apiKeys[vlm.key] || ''}
+                  onChange={e => setApiKeys(keys => ({ ...keys, [vlm.key]: e.target.value }))}
+                  placeholder={`API Key for ${vlm.label}`}
+                  autoComplete="off"
+                />
+              </Form.Group>
+            ))}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setSettingsOpen(false)}>
+            Cancel
+          </Button>
+          {/* Trigger form submission */}
+          <Button variant="primary" type="submit" form="api-key-form">
+            Save
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  };
+
   return (
     <div>
+      {/* VLM selection and settings */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <label className="me-2">VLM:</label>
+          <select
+            value={selectedVLM}
+            onChange={e => setSelectedVLM(e.target.value)}
+            className="form-select d-inline-block"
+            style={{ width: 280, display: 'inline-block' }}
+          >
+            {VLM_LIST.map(vlm => (
+              <option key={vlm.key} value={vlm.key}>{vlm.label}</option>
+            ))}
+          </select>
+        </div>
+        <button className="btn btn-outline-secondary btn-sm" onClick={() => {
+          console.log('Settings button clicked, setting settingsOpen to true');
+          setSettingsOpen(true);
+        }}>
+          Settings
+        </button>
+      </div>
+      {settingsOpen && renderSettingsModal()}
       <h1>Welcome to Sketcher</h1>
       <p>Turn your whiteboard sketches into beautiful drawio diagrams.</p>
       <ImageUpload onImageSelected={handleImageSelected} onReset={handleReset} />
@@ -141,7 +243,6 @@ const Home: React.FC = () => {
           {(() => {
             console.log('Shapes sent to Drawio:', diagramData.shapes);
             const rawXml = generateDrawioXml(diagramData.shapes, diagramData.relationships, imageDimensions);
-            console.log('Raw Drawio XML sent to Drawio:', rawXml);
             return (
               <DrawioViewer
                 xml={encodeDrawioXml(rawXml)}
