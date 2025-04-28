@@ -144,49 +144,7 @@ const GEMINI_PROMPTS: Record<string, string> = {
   7.  Generate ONLY the JSON object conforming strictly to the structure specified above. Do not include any explanatory text before or after the JSON object.
   8.  Attempt to cross-verify the geometric data (e.g., do bounding box coordinates match the reported width/height?) and note findings in \`plausibility_check_notes\`.
   
-  Analyze the provided image now and generate the JSON output.`,
-  v2: `You are an expert visual analysis assistant specialized in interpreting whiteboard sketches containing geometric shapes and text. Your task is to meticulously analyze the provided image of a whiteboard sketch and extract comprehensive information about all its elements, their properties, and their relationships, outputting the result ONLY as a valid JSON object.
-
-  **JSON Output Requirements:**
-  
-  The JSON object must have the following top-level keys:
-  1.  \`analysis_summary\`: An object containing:
-      * \`total_distinct_elements\`: (Integer) The total number of distinct geometric shapes and text blocks identified.
-      * \`composition_interpretation\`: (String) A brief description of what the overall sketch might represent (e.g., "Flowchart illustrating a process", "Mind map exploring ideas", "Geometric construction study", "Basic UI wireframe").
-  2.  \`elements\`: An array of objects, where each object represents a single detected element (shape or text). Each element object must have the following keys:
-      * \`id\`: (Integer) A unique sequential identifier for each element (starting from 1).
-      * \`type\`: (String) The type of the element. Must be one of: "rectangle", "square", "parallelogram", "rhombus", "triangle", "circle", "ellipse", "arrow", "line_segment", "text", "other_shape".
-      * \`bounding_box\`: An object with \`x1\`, \`y1\`, \`x2\`, \`y2\` keys (Integers), representing the top-left and bottom-right pixel coordinates of the element's bounding box. Assume origin (0,0) is the top-left corner of the image.
-      * \`center_coordinates\`: An object with \`cx\`, \`cy\` keys (Floats or Integers), representing the approximate center coordinates.
-      * \`dimensions\`: An object containing size information appropriate for the shape type:
-          * For rectangles/squares/parallelograms/rhombus/ellipses: \`width\` (Integer), \`height\` (Integer).
-          * For circles: \`radius\` (Float or Integer).
-          * For triangles: \`base\` (Integer), \`height\` (Integer) (if easily determinable) or side lengths if possible.
-          * For line_segments/arrows: \`length\` (Float or Integer).
-      * \`orientation_angle\`: (Float) Estimated angle of rotation in degrees (0 for horizontal/vertical alignment, positive for counter-clockwise rotation), if applicable and significantly non-zero (e.g., > 5 degrees). Default to 0 if not applicable or axis-aligned.
-      * \`style_info\`: An object with keys like:
-          * \`line_thickness\`: (String) e.g., "thin", "medium", "thick".
-          * \`line_style\`: (String) e.g., "solid", "dashed", "dotted".
-          * \`color\`: (String) Detected color (e.g., "black", "red", "blue") if discernible, otherwise "unknown".
-          * \`fill\`: (String) Fill color if applicable, otherwise "none".
-      * \`text_content\`: (String) The recognized text within the element. Null if not a text element.
-      * \`relationships\`: An array of objects describing spatial relationships to *other* elements. Each relationship object should have:
-          * \`related_element_id\`: (Integer) The \`id\` of the other element.
-          * \`relation_type\`: (String) The type of relationship (e.g., "left_of", "right_of", "above", "below", "overlaps_with", "partially_overlaps_with", "inside", "contains", "connected_to_start", "connected_to_end", "points_to"). Be precise (e.g., specify which part overlaps if possible).
-  3.  \`plausibility_check_notes\`: (String) Describe potential inconsistencies or confirmations regarding the extracted coordinates and dimensions. For example, "Bounding box dimensions generally match calculated width/height for rectangles", "Overlap relationships seem consistent with bounding box intersections", or "Detected center/radius for circle seems consistent with visual representation".
-  
-  **Instructions:**
-  
-  1.  Carefully examine the entire whiteboard sketch image.
-  2.  Identify every distinct geometric shape (rectangles, squares, circles, ellipses, triangles, parallelograms, rhombus, arrows, lines) and block of text.
-  3.  For each element, determine its type, precise bounding box, approximate center, dimensions, orientation, style, and any text content.
-  4.  Analyze the spatial relationships between pairs of elements (position, overlap, connection). Focus on immediate and clear relationships.
-  5.  Count the total number of distinct elements identified.
-  6.  Provide a concise interpretation of the sketch's likely purpose or subject.
-  7.  Generate ONLY the JSON object conforming strictly to the structure specified above. Do not include any explanatory text before or after the JSON object.
-  8.  Attempt to cross-verify the geometric data (e.g., do bounding box coordinates match the reported width/height?) and note findings in \`plausibility_check_notes\`.
-  
-  Analyze the provided image now and generate the JSON output.`,
+  Analyze the provided image now and generate the JSON output.`
 };
 
 /**
@@ -375,7 +333,7 @@ class GeminiAdapter implements VLMService {
    * @param imageDataUrl Image as a base64 data URL (PNG recommended)
    * @returns Promise resolving to a StructuredDiagram
    */
-  async analyzeImage(imageDataUrl: string, _vlmType: string = 'gemini', apiKey?: string): Promise<VLMServiceResponse> {
+  async analyzeImage(imageDataUrl: string, apiKey?: string): Promise<VLMServiceResponse> {
     console.log('[Gemini] Analyzing with Gemini adapter...', { apiKeyProvided: !!apiKey });
     const imageHash = await hashImageData(imageDataUrl);
     // Check cache first
@@ -511,7 +469,7 @@ class ClaudeAdapter implements VLMService {
     return dataUrl.replace(/^data:image\/png;base64,/, '');
   }
 
-  async analyzeImage(imageDataUrl: string, _vlmType: string = 'claude', apiKey?: string): Promise<VLMServiceResponse> {
+  async analyzeImage(imageDataUrl: string, apiKey?: string): Promise<VLMServiceResponse> {
     const imageBase64 = this.dataUrlToBase64Png(imageDataUrl);
     const prompt = buildGeminiPrompt('v1'); // Use the same prompt for consistency
     const anthropic = new Anthropic({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
@@ -540,7 +498,9 @@ class ClaudeAdapter implements VLMService {
             },
           ],
         });
-        const text = msg.content?.[0]?.text || '';
+        const firstBlock = msg.content?.[0];
+        // Only use .text if it exists on the block
+        const text = (firstBlock && typeof firstBlock === 'object' && 'text' in firstBlock && typeof firstBlock.text === 'string') ? firstBlock.text : '';
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new GeneralAPIError('No JSON found in Claude response.');
         const parsed = JSON.parse(jsonMatch[0]);
@@ -602,7 +562,7 @@ class Gpt4oAdapter implements VLMService {
     return dataUrl.replace(/^data:image\/png;base64,/, '');
   }
 
-  async analyzeImage(imageDataUrl: string, _vlmType: string = 'gpt4o', apiKey?: string): Promise<VLMServiceResponse> {
+  async analyzeImage(imageDataUrl: string, apiKey?: string): Promise<VLMServiceResponse> {
     const openai = new OpenAI({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
     const imageBase64 = this.dataUrlToBase64Png(imageDataUrl);
     const prompt = buildGeminiPrompt('v1'); // Use the same prompt for consistency
@@ -714,8 +674,8 @@ export { GEMINI_CACHE, hashImageData };
 
 // Dummy Adapter for fallback/testing
 class DummyVLMAdapter implements VLMService {
-  public async analyzeImage(_dataUrl: string, vlmType: string = 'dummy', _apiKey?: string): Promise<VLMServiceResponse> {
-    console.warn(`[DummyVLM] Using dummy adapter for type: ${vlmType}. Returning mock data.`);
+  public async analyzeImage(_dataUrl: string): Promise<VLMServiceResponse> {
+    console.warn(`[DummyVLM] Using dummy adapter for type: ${_dataUrl}. Returning mock data.`);
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     // Return mock response matching VLMServiceResponse structure
     return {
