@@ -40,7 +40,7 @@ function escapeXml(unsafe: string): string {
  */
 export function generateDrawioXml(
   shapes: Shape[],
-  relationships: ShapeRelationship[],
+  _relationships: ShapeRelationship[],
   originalDimensions: OriginalImageDimensions
 ): string {
   const TARGET_DRAWIO_WIDTH = 850; // Corresponds to page width in template

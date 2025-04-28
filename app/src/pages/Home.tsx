@@ -78,7 +78,7 @@ const Home: React.FC = () => {
       try {
         // Manually select adapter based on state (replace with factory/hook later)
         const currentApiKey = apiKeys[selectedVLM];
-        const activeVlmService: VLMService = getVlmAdapter(selectedVLM); // Use the placeholder factory
+        const activeVlmService: VLMService = getVlmAdapter(selectedVLM, currentApiKey); // Use the placeholder factory
 
         const vlmResponse = await activeVlmService.analyzeImage(dataUrl, selectedVLM, currentApiKey);
         setRawVlmResponse(vlmResponse);

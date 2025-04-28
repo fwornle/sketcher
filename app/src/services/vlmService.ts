@@ -389,7 +389,7 @@ class GeminiAdapter implements VLMService {
     }
     const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + (apiKey || this.apiKey);
     const base64 = imageDataUrl.split(',')[1];
-    const prompt = buildGeminiPrompt('v2');
+    const prompt = buildGeminiPrompt('v1');
     const requestBody = {
       contents: [
         {
@@ -513,7 +513,7 @@ class ClaudeAdapter implements VLMService {
 
   async analyzeImage(imageDataUrl: string, _vlmType: string = 'claude', apiKey?: string): Promise<VLMServiceResponse> {
     const imageBase64 = this.dataUrlToBase64Png(imageDataUrl);
-    const prompt = buildGeminiPrompt('v2'); // Use the same prompt for consistency
+    const prompt = buildGeminiPrompt('v1'); // Use the same prompt for consistency
     const anthropic = new Anthropic({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
     let lastError: unknown = null;
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
@@ -605,7 +605,7 @@ class Gpt4oAdapter implements VLMService {
   async analyzeImage(imageDataUrl: string, _vlmType: string = 'gpt4o', apiKey?: string): Promise<VLMServiceResponse> {
     const openai = new OpenAI({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
     const imageBase64 = this.dataUrlToBase64Png(imageDataUrl);
-    const prompt = buildGeminiPrompt('v2'); // Use the same prompt for consistency
+    const prompt = buildGeminiPrompt('v1'); // Use the same prompt for consistency
     let lastError: unknown = null;
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
@@ -733,15 +733,15 @@ class DummyVLMAdapter implements VLMService {
 
 // Placeholder for a function that might select the adapter
 // This logic should ideally live within useVLMService or a factory
-function getVlmAdapter(vlmType: string): VLMService {
+function getVlmAdapter(vlmType: string, apiKey: string = ''): VLMService {
   console.log(`Selecting adapter for VLM type: ${vlmType}`);
   switch (vlmType) {
     case 'gemini':
-      return new GeminiAdapter('');
+      return new GeminiAdapter(apiKey);
     case 'claude':
-      return new ClaudeAdapter('');
+      return new ClaudeAdapter(apiKey);
     case 'gpt4o':
-      return new Gpt4oAdapter('');
+      return new Gpt4oAdapter(apiKey);
     default:
       console.warn(`No adapter found for VLM type: ${vlmType}, using dummy adapter.`);
       return new DummyVLMAdapter();
