@@ -96,6 +96,78 @@ const PreferencesModal: React.FC<PreferencesModalProps> = ({ show, onClose }) =>
                   <Form.Control.Feedback type="invalid">{errors.gemma4ApiKey}</Form.Control.Feedback>
                   <Form.Text muted>Get your Gemma4 API key from the Gemma4 provider.</Form.Text>
                 </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>GPT-4o API Key</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="Enter GPT-4o API Key"
+                    autoComplete="off"
+                    name="gpt4oApiKey"
+                    value={prefs.gpt4oApiKey || ''}
+                    onChange={handleChange}
+                  />
+                  <Form.Text muted>Get your GPT-4o API key from OpenAI.</Form.Text>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Claude API Key</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="Enter Claude API Key"
+                    autoComplete="off"
+                    name="claudeApiKey"
+                    value={prefs.claudeApiKey || ''}
+                    onChange={handleChange}
+                  />
+                  <Form.Text muted>Get your Claude API key from Anthropic.</Form.Text>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Qwen2.5-VL API Key</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="API Key for Qwen2.5-VL"
+                    autoComplete="off"
+                    name="qwenApiKey"
+                    value={prefs.qwenApiKey || ''}
+                    onChange={handleChange}
+                  />
+                  <Form.Text muted>Get your Qwen2.5-VL API key from the provider.</Form.Text>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Florence-2 API Key</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="API Key for Florence-2"
+                    autoComplete="off"
+                    name="florenceApiKey"
+                    value={prefs.florenceApiKey || ''}
+                    onChange={handleChange}
+                  />
+                  <Form.Text muted>Get your Florence-2 API key from the provider.</Form.Text>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>CogVLM (Ollama) API Key</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="API Key for CogVLM (Ollama)"
+                    autoComplete="off"
+                    name="cogvlmApiKey"
+                    value={prefs.cogvlmApiKey || ''}
+                    onChange={handleChange}
+                  />
+                  <Form.Text muted>Get your CogVLM API key from the provider.</Form.Text>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>LLaVA API Key</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="API Key for LLaVA"
+                    autoComplete="off"
+                    name="llavaApiKey"
+                    value={prefs.llavaApiKey || ''}
+                    onChange={handleChange}
+                  />
+                  <Form.Text muted>Get your LLaVA API key from the provider.</Form.Text>
+                </Form.Group>
               </Form>
             </Tab.Pane>
             <Tab.Pane eventKey="prefs">

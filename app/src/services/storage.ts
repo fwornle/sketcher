@@ -5,6 +5,10 @@ export interface Preferences {
   gemma4ApiKey?: string;
   claudeApiKey?: string;
   gpt4oApiKey?: string;
+  qwenApiKey?: string;
+  florenceApiKey?: string;
+  cogvlmApiKey?: string;
+  llavaApiKey?: string;
   theme?: 'light' | 'dark' | 'system';
   exportFormat?: 'drawio' | 'svg' | 'png';
 }

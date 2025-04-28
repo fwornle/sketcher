@@ -171,6 +171,7 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
               relationshipType = 'contains'; break;
             case 'above':
             case 'on': // Map 'on' to 'above'
+            case 'on_top_of': // Map 'on_top_of' to 'above'
               relationshipType = 'above'; break;
             case 'below': relationshipType = 'below'; break;
             case 'left_of': relationshipType = 'left-of'; break;
@@ -179,7 +180,7 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
             case 'partially_overlaps_with':
               relationshipType = 'overlaps'; break;
             default:
-              errors.push(`Unknown nested relation_type: ${nestedRel.relation_type}`);
+              // Fallback: ignore unknown relation types, do not add error
               return; // Skip unknown relationship types
           }
 

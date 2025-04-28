@@ -5,9 +5,7 @@ import { DrawioViewer } from '../components/DrawioViewer';
 import { generateDrawioXml, encodeDrawioXml } from '../services/drawioConverter';
 import { Shape, ShapeRelationship } from '../services/shapeModels';
 import { parseShapesFromVLMResponse } from '../services/shapeParser';
-import Modal from 'react-bootstrap/Modal';
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
+import { usePreferences } from '../context/PreferencesContext';
 
 interface ImageDimensions {
   width: number;
@@ -30,12 +28,15 @@ const VLM_LIST = [
 ];
 
 const getStoredVLM = () => localStorage.getItem('selectedVLM') || 'gemini';
-const getStoredApiKeys = () => {
-  try {
-    return JSON.parse(localStorage.getItem('vlmApiKeys') || '{}');
-  } catch {
-    return {};
-  }
+
+const VLM_TO_PREF_KEY: Record<string, keyof import('../services/storage').Preferences> = {
+  gpt4o: 'gpt4oApiKey',
+  gemini: 'geminiApiKey',
+  claude: 'claudeApiKey',
+  qwen: 'qwenApiKey',
+  florence: 'florenceApiKey',
+  cogvlm: 'cogvlmApiKey',
+  llava: 'llavaApiKey',
 };
 
 const Home: React.FC = () => {
@@ -51,15 +52,11 @@ const Home: React.FC = () => {
   const [rawVlmResponse, setRawVlmResponse] = useState<VLMServiceResponse | null>(null);
   const [copied, setCopied] = useState(false);
   const [selectedVLM, setSelectedVLM] = useState<string>(getStoredVLM());
-  const [apiKeys, setApiKeys] = useState<{ [key: string]: string }>(getStoredApiKeys());
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { preferences } = usePreferences();
 
   useEffect(() => {
     localStorage.setItem('selectedVLM', selectedVLM);
   }, [selectedVLM]);
-  useEffect(() => {
-    localStorage.setItem('vlmApiKeys', JSON.stringify(apiKeys));
-  }, [apiKeys]);
 
   const handleImageSelected = async (_file: File, dataUrl: string) => {
     setError(null);
@@ -77,10 +74,11 @@ const Home: React.FC = () => {
       setImageDimensions(dimensions);
       try {
         // Manually select adapter based on state (replace with factory/hook later)
-        const currentApiKey = apiKeys[selectedVLM];
+        const prefKey = VLM_TO_PREF_KEY[selectedVLM];
+        const currentApiKey = prefKey ? preferences[prefKey] || '' : '';
         const activeVlmService: VLMService = getVlmAdapter(selectedVLM, currentApiKey); // Use the placeholder factory
 
-        const vlmResponse = await activeVlmService.analyzeImage(dataUrl, selectedVLM, currentApiKey);
+        const vlmResponse = await activeVlmService.analyzeImage(dataUrl, currentApiKey);
         setRawVlmResponse(vlmResponse);
 
         const { shapes, relationships, errors: parsingErrors, compositionDescription: desc } = parseShapesFromVLMResponse(vlmResponse);
@@ -133,61 +131,6 @@ const Home: React.FC = () => {
     }
   };
 
-  const renderSettingsModal = () => {
-    const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      console.log('Saving API Keys:', apiKeys);
-      setSettingsOpen(false); // Close modal on save
-    };
-
-    return (
-      <Modal show={settingsOpen} onHide={() => setSettingsOpen(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>VLM API Keys</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form id="api-key-form" onSubmit={handleSave} autoComplete="off">
-            {VLM_LIST.map(vlm => {
-              const hasKey = !!apiKeys[vlm.key];
-              return (
-                <Form.Group className="mb-3" controlId={`apiKey-${vlm.key}`} key={vlm.key}>
-                  <Form.Label>{vlm.label}</Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={hasKey ? '••••••••' : ''}
-                    onChange={e => {
-                      // If the field is being edited, always treat as new input
-                      const val = e.target.value;
-                      setApiKeys(keys => ({ ...keys, [vlm.key]: val === '' || val === '••••••••' ? '' : val }));
-                    }}
-                    placeholder={`API Key for ${vlm.label}`}
-                    autoComplete="new-password"
-                    onFocus={e => {
-                      // Clear the field for new input if a key is already set
-                      if (apiKeys[vlm.key]) {
-                        e.target.value = '';
-                      }
-                    }}
-                  />
-                  {hasKey && <Form.Text muted>API key is set. Enter a new value to overwrite.</Form.Text>}
-                </Form.Group>
-              );
-            })}
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setSettingsOpen(false)}>
-            Cancel
-          </Button>
-          {/* Trigger form submission */}
-          <Button variant="primary" type="submit" form="api-key-form">
-            Save
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    );
-  };
-
   return (
     <div>
       {/* VLM selection and settings */}
@@ -205,14 +148,7 @@ const Home: React.FC = () => {
             ))}
           </select>
         </div>
-        <button className="btn btn-outline-secondary btn-sm" onClick={() => {
-          console.log('Settings button clicked, setting settingsOpen to true');
-          setSettingsOpen(true);
-        }}>
-          Settings
-        </button>
       </div>
-      {settingsOpen && renderSettingsModal()}
       <h1>Welcome to Sketcher</h1>
       <p>Turn your whiteboard sketches into beautiful drawio diagrams.</p>
       <ImageUpload onImageSelected={handleImageSelected} onReset={handleReset} />
