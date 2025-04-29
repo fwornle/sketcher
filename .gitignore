@@ -27,5 +27,4 @@ node_modules/
 # Task files
 tasks.json
 tasks/ 
-app/.vite/deps/package.json
-app/.vite/deps/_metadata.json
+app/.vite/*
