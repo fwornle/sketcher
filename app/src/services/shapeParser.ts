@@ -3,23 +3,23 @@ import {
   ShapeRelationship,
   ShapeType,
   RelationshipType,
-  Rectangle,
-  Circle,
-  Ellipse,
-  Triangle,
-  Arrow,
-  Line,
   TextShape,
-  Parallelogram,
-  Rhombus,
-  Style,
-  Trapezoid
+  ElementStyleProps
 } from './shapeModels';
-import { VLMServiceResponse } from './vlmService';
+import { VLMServiceResponse, DiagramElement } from './vlmService';
 
 // Helper function to generate unique relationship IDs
 let relIdCounter = 0;
 const generateRelId = () => `flat-rel-${++relIdCounter}`;
+
+// Add type guard for text elements
+interface TextElement extends DiagramElement {
+  text?: string;
+}
+
+function isTextElement(el: DiagramElement): el is TextElement {
+  return el.type === 'text';
+}
 
 /**
  * Parses shapes and relationships from the VLM response (v2 schema).
@@ -62,6 +62,12 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
   // Remove old top-level relationship parsing
   // const rels = Array.isArray(o.relationships) ? o.relationships : [];
 
+  // Constants for shape dimensions
+  const MIN_TEXT_WIDTH = 60;
+  const MIN_TEXT_HEIGHT = 30;
+  const CHAR_WIDTH = 8; // Approximate width per character at fontSize 14
+  const LINE_WIDTH = 2;
+
   // Parse elements
   elements.forEach((el, i) => {
     // Use the imported VLMServiceResponse types for better checking
@@ -74,12 +80,22 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
     const type = typeof el.type === 'string' ? el.type : undefined;
     const bb = el.bounding_box;
     // Convert bounding_box (x1, y1, x2, y2) to expected format (x, y, width, height)
+    // and ensure minimum dimensions
     const boundingBox = bb && typeof bb.x1 === 'number' && typeof bb.y1 === 'number' && typeof bb.x2 === 'number' && typeof bb.y2 === 'number'
-      ? { x: bb.x1, y: bb.y1, width: bb.x2 - bb.x1, height: bb.y2 - bb.y1 }
+      ? {
+          x: bb.x1,
+          y: bb.y1,
+          width: el.type === 'text' 
+            ? Math.max(MIN_TEXT_WIDTH, Math.max(CHAR_WIDTH * ((isTextElement(el) && el.text ? el.text.length : 0)), bb.x2 - bb.x1))
+            : Math.max(LINE_WIDTH, bb.x2 - bb.x1),
+          height: el.type === 'text'
+            ? Math.max(MIN_TEXT_HEIGHT, bb.y2 - bb.y1)
+            : Math.max(LINE_WIDTH, bb.y2 - bb.y1)
+        }
       : undefined;
 
     // Map style_info to the simple Style object
-    const style: Style = {}; // Initialize empty style object
+    const style: ElementStyleProps = {}; // Use ElementStyleProps type
     if (el.style_info) {
       if (el.style_info.color && el.style_info.color !== 'unknown') style.color = el.style_info.color;
       if (el.style_info.fill && el.style_info.fill !== 'none') style.fill = el.style_info.fill;
@@ -117,35 +133,90 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
     // Use the mapped type. If it's not a valid ShapeType, the switch will skip it.
     const internalType = mappedType as ShapeType;
 
+    // Constants for minimum dimensions
+    const MIN_SIZE = 2; // Increased from 1 to make lines more visible
+    const MIN_ARROW_LENGTH = 50; // Increased from 20 to make arrows more prominent
+    const MIN_ARROW_HEAD = 10; // Minimum width for arrow head
+    
+    // Adjust bounding box based on shape type
+    if (internalType === 'line' || internalType === 'arrow') {
+      // Calculate the original center point
+      const centerX = finalBoundingBox.x + finalBoundingBox.width / 2;
+      const centerY = finalBoundingBox.y + finalBoundingBox.height / 2;
+
+      // For vertical lines/arrows
+      if (Math.abs(finalBoundingBox.width) < MIN_SIZE * 2) {
+        finalBoundingBox.width = internalType === 'arrow' ? MIN_ARROW_HEAD : MIN_SIZE * 2;
+        finalBoundingBox.height = Math.max(MIN_ARROW_LENGTH, Math.abs(finalBoundingBox.height));
+      } 
+      // For horizontal lines/arrows
+      else if (Math.abs(finalBoundingBox.height) < MIN_SIZE * 2) {
+        finalBoundingBox.height = internalType === 'arrow' ? MIN_ARROW_HEAD : MIN_SIZE * 2;
+        finalBoundingBox.width = Math.max(MIN_ARROW_LENGTH, Math.abs(finalBoundingBox.width));
+      } 
+      // For diagonal lines/arrows
+      else {
+        // Ensure minimum length while preserving angle
+        const length = Math.sqrt(finalBoundingBox.width ** 2 + finalBoundingBox.height ** 2);
+        const minLength = internalType === 'arrow' ? MIN_ARROW_LENGTH : MIN_SIZE * 10;
+        if (length < minLength) {
+          const scale = minLength / length;
+          finalBoundingBox.width *= scale;
+          finalBoundingBox.height *= scale;
+        }
+        // Ensure minimum thickness
+        const minThickness = internalType === 'arrow' ? MIN_ARROW_HEAD : MIN_SIZE * 2;
+        if (Math.min(Math.abs(finalBoundingBox.width), Math.abs(finalBoundingBox.height)) < minThickness) {
+          if (Math.abs(finalBoundingBox.width) < Math.abs(finalBoundingBox.height)) {
+            finalBoundingBox.width = Math.sign(finalBoundingBox.width) * minThickness;
+          } else {
+            finalBoundingBox.height = Math.sign(finalBoundingBox.height) * minThickness;
+          }
+        }
+      }
+
+      // Recenter the shape around the original center point
+      finalBoundingBox.x = centerX - finalBoundingBox.width / 2;
+      finalBoundingBox.y = centerY - finalBoundingBox.height / 2;
+    }
+    // Ensure text shapes have sufficient size for content
+    else if (internalType === 'text') {
+      // Calculate minimum width based on text length if text exists
+      const textLength = text ? text.length : 0;
+      const estimatedWidth = Math.max(MIN_TEXT_WIDTH, textLength * 10); // Rough estimate of 10px per character
+      finalBoundingBox.width = Math.max(finalBoundingBox.width, estimatedWidth);
+      finalBoundingBox.height = Math.max(finalBoundingBox.height, MIN_TEXT_HEIGHT);
+    }
+
     // Map to specific shape type using the final guaranteed values and validated type
     let shape: Shape | null = null; // Initialize as null
     switch (internalType) {
       case 'rectangle':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Rectangle;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle };
         break;
       case 'circle':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Circle;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle };
         break;
       case 'ellipse':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Ellipse;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle };
         break;
       case 'triangle':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Triangle;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle };
         break;
       case 'arrow':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, orientation, role, orientation_angle } as Arrow;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, orientation, role, orientation_angle };
         break;
       case 'line':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, orientation, role, orientation_angle } as Line;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, orientation, role, orientation_angle };
         break;
       case 'parallelogram':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Parallelogram;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle };
         break;
       case 'rhombus':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Rhombus;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle };
         break;
       case 'trapezoid':
-        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Trapezoid;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle };
         break;
       case 'text':
         if (text !== undefined) { // Check against explicitly undefined text
@@ -211,6 +282,21 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
         }
       });
     }
+
+    // For diagonal lines, maintain the center point while ensuring minimum size
+    if ((internalType === 'line' || internalType === 'arrow') && boundingBox) {
+      const centerX = boundingBox.x + boundingBox.width / 2;
+      const centerY = boundingBox.y + boundingBox.height / 2;
+      
+      if (boundingBox.width < LINE_WIDTH) {
+        boundingBox.x = centerX - LINE_WIDTH / 2;
+        boundingBox.width = LINE_WIDTH;
+      }
+      if (boundingBox.height < LINE_WIDTH) {
+        boundingBox.y = centerY - LINE_WIDTH / 2;
+        boundingBox.height = LINE_WIDTH;
+      }
+    }
   });
 
   // Remove the old relationship parsing loop
@@ -273,7 +359,7 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
  * Validates shape data for completeness and consistency.
  * @param shapes Array of shapes
  * @param relationships Array of relationships
- * @returns { valid, errors }
+ * @returns { valid: boolean; errors: string[] }
  */
 export function validateShapeData(
   shapes: Shape[],
@@ -281,20 +367,30 @@ export function validateShapeData(
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   const shapeIds = new Set(shapes.map(s => s.id));
-  // Check for duplicate IDs
+
+  // Check for duplicate shape IDs
   if (shapeIds.size !== shapes.length) {
-    errors.push('Duplicate shape IDs found');
+    const counts = shapes.reduce((acc, shape) => {
+      acc[shape.id] = (acc[shape.id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const duplicates = Object.entries(counts).filter(([, count]) => count > 1).map(([id]) => id);
+    errors.push(`Duplicate shape IDs found: ${duplicates.join(', ')}`);
   }
-  // Check that all relationship source/target IDs exist
+
+  // Check relationship validity
   relationships.forEach((rel, i) => {
+    if (!rel.sourceId || !rel.targetId) {
+      errors.push(`Relationship at index ${i} (ID: ${rel.id}) is missing source or target ID.`);
+    }
     if (!shapeIds.has(rel.sourceId)) {
-      errors.push(`Relationship at index ${i} has unknown sourceId '${rel.sourceId}'`);
+      errors.push(`Relationship (ID: ${rel.id}) source ID '${rel.sourceId}' does not match any shape ID.`);
     }
     if (!shapeIds.has(rel.targetId)) {
-      errors.push(`Relationship at index ${i} has unknown targetId '${rel.targetId}'`);
+      errors.push(`Relationship (ID: ${rel.id}) target ID '${rel.targetId}' does not match any shape ID.`);
     }
   });
-  // TODO: Add more validation (e.g., bounding box consistency, style checks)
+
   return { valid: errors.length === 0, errors };
 }
 

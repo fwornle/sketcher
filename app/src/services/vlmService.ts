@@ -55,7 +55,7 @@ type ElementDimensions = WidthHeight | Radius | Length | BaseHeight | { [key: st
 // Updated DiagramElement to include 'trapezoid' as a valid type
 export interface DiagramElement {
   id: string;
-  type: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'arrow' | 'line' | 'text' | 'parallelogram' | 'rhombus' | 'trapezoid';
+  type: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'arrow' | 'line' | 'text' | 'parallelogram' | 'rhombus' | 'diamond' | 'hexagon' | 'octagon' | 'trapezoid';
   bounding_box: BoundingBoxX1Y1X2Y2;
   center_coordinates?: { cx: number; cy: number }; // Optional as it's approximate
   dimensions?: ElementDimensions; // Use the specific union type
@@ -110,7 +110,7 @@ const GEMINI_PROMPTS: Record<string, string> = {
   The JSON object must have the following top-level keys:
   1.  \`analysis_summary\`: An object containing:
       * \`total_distinct_elements\`: (Integer) The total number of distinct geometric shapes and text blocks identified.
-      * \`composition_interpretation\`: (String) A brief description of what the overall sketch might represent (e.g., "Flowchart illustrating a process", "Mind map exploring ideas", "Geometric construction study", "Architectural sketch/Simple house drawing").
+      * \`composition_interpretation\`: (String) A brief description of what the overall sketch might represent.
   2.  \`elements\`: An array of objects, where each object represents a single detected element (shape or text). Each element object must have the following keys:
       * \`id\`: (Integer) A unique sequential identifier for each element (starting from 1).
       * \`type\`: (String) The type of the element. Must be one of: "rectangle", "square", "parallelogram", "rhombus", "triangle", "circle", "ellipse", "arrow", "line_segment", "text", **"trapezoid"**, "other_shape". (Explicitly include "trapezoid").
@@ -146,7 +146,7 @@ const GEMINI_PROMPTS: Record<string, string> = {
   5.  **Critically analyze and verify** the spatial relationships between *all* pairs of elements (position, overlap, connection). Focus on immediate and clear relationships, but also consider broader alignments.
       **Perform internal verification:** Cross-reference the bounding box coordinates, dimensions, and relative positions. For example, if element A is reported as "above" element B, confirm that A's y2 coordinate is less than B's y1 coordinate (allowing for slight margins due to line thickness). If possible, calculate relative distances or overlaps between key points or edges of related shapes (e.g., percentage distance between the bottom of the triangle and the top of the roof). Use these internal checks to refine your reported coordinates and relationships for maximum accuracy. **Ensure the reported relative positions and sizes precisely reflect the visual appearance.**
   6.  Count the total number of distinct elements identified and report it accurately.
-  7.  Provide a concise interpretation of the sketch's likely purpose or subject. Recognizing it as a "simple house drawing" is a valid interpretation.
+  7.  Provide a concise interpretation of the sketch's likely purpose or subject.
   8.  Generate **ONLY** the JSON object conforming strictly to the structure specified above. Do not include any explanatory text before or after the JSON object.
   9.  Use the \`plausibility_check_notes\` to explicitly comment on the accuracy and consistency of your geometric and relational findings, noting where your analysis confirms the visual sketch and where any minor ambiguities might exist (though strive for high accuracy).
   
@@ -439,13 +439,65 @@ class GeminiAdapter implements VLMService {
           }
           throw new GeneralAPIError(`Gemini API error: ${res.status} ${res.statusText} - ${resText}`);
         }
-        const data = JSON.parse(resText);
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new GeneralAPIError('No response from Gemini.');
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new GeneralAPIError('No JSON found in Gemini response.');
-        const parsed = JSON.parse(jsonMatch[0]);
-        // Validate against schema
+        
+        // --- Start: JSON Parsing and Cleaning ---
+        const rawResponseData = await res.json(); // Parse the outer structure first
+        const text = rawResponseData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!text) {
+          console.error("Invalid response structure or missing text content from Gemini:", rawResponseData);
+          throw new GeneralAPIError('No valid text content found in Gemini response.');
+        }
+
+        // Clean the text response before parsing more robustly
+        const cleanedText = text
+          .replace(/\/\/.*$/gm, '')      // Remove // comments
+          .replace(/\.\.\./g, '')         // Remove ... placeholders
+          // Robust fence removal (case-insensitive, flexible whitespace)
+          .replace(/^\s*```(?:json)?\s*\n?|\n?\s*```\s*$/gim, '') 
+          .trim();                       // Trim whitespace
+
+        let parsed: unknown;
+        console.log("Attempting to parse cleaned text:", cleanedText); // Log cleaned text
+        try {
+            // Attempt to parse the cleaned text directly
+            parsed = JSON.parse(cleanedText);
+        } catch (parseError) {
+            console.warn("Parsing cleaned text failed, attempting regex fallback...", parseError);
+            // Fallback: Try regex match on original text
+            // Use non-greedy match to find the first potential JSON object
+            const jsonMatch = text.match(/\{([\s\S]*?)\}/);
+            if (jsonMatch && jsonMatch[0]) {
+                console.log("Regex fallback match found:", jsonMatch[0]);
+                // Clean the regex match as well before parsing
+                const cleanedMatch = jsonMatch[0]
+                    .replace(/\/\/.*$/gm, '')
+                    .replace(/\.\.\./g, '')
+                    // Apply robust fence removal here too, just in case regex included them
+                    .replace(/^\s*```(?:json)?\s*\n?|\n?\s*```\s*$/gim, '')
+                    .trim();
+                console.log("Attempting to parse cleaned regex match:", cleanedMatch); // Log cleaned match
+                try {
+                    parsed = JSON.parse(cleanedMatch);
+                } catch (fallbackParseError) {
+                    console.error("Fallback JSON parsing also failed:", fallbackParseError);
+                    console.error("Original text was:", text); // Log original for debugging
+                    throw new GeneralAPIError('No valid JSON found in Gemini response even after cleaning and regex fallback.');
+                }
+            } else {
+                 console.error("No JSON object found via regex in original text:", text);
+                 throw new GeneralAPIError('No valid JSON found in Gemini response after cleaning and regex attempt.');
+            }
+        }
+        // --- End: JSON Parsing and Cleaning ---
+
+        // Ensure parsed data is an object before proceeding
+        if (typeof parsed !== 'object' || parsed === null) {
+            console.error("Parsed content is not a valid object:", parsed);
+            throw new GeneralAPIError('Parsed Gemini response is not a valid object.');
+        }
+
+        // Validate against schema using the now-known-to-be-object parsed object
         const validation = validateStructuredDiagram(parsed);
         if (!validation.valid) {
           // Check elements safely, provide default empty array if undefined
@@ -462,7 +514,8 @@ class GeminiAdapter implements VLMService {
           throw new GeneralAPIError('Malformed Gemini output: ' + validation.errors.join('; '));
         }
         // Cache successful result (including description)
-        const finalResponse = { ...parsed, vlmProvider: 'gemini' } as VLMServiceResponse;
+        // Type assertion is okay here because we validated parsed is an object
+        const finalResponse = { ...(parsed as object), vlmProvider: 'gemini' } as VLMServiceResponse;
         GEMINI_CACHE.set(imageHash, finalResponse);
         // Enforce LRU max size
         if (GEMINI_CACHE.size > GEMINI_CACHE_MAX) {

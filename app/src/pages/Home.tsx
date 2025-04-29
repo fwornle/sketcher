@@ -7,16 +7,7 @@ import { Shape, ShapeRelationship } from '../services/shapeModels';
 import { parseShapesFromVLMResponse } from '../services/shapeParser';
 import { usePreferences } from '../context/PreferencesContext';
 
-interface ImageDimensions {
-  width: number;
-  height: number;
-}
-
-interface ParsedDiagram {
-  shapes: Shape[];
-  relationships: ShapeRelationship[];
-}
-
+// Re-enabled VLM constants
 const VLM_LIST = [
   { key: 'gpt4o', label: 'OpenAI GPT-4o / GPT-4V(ision)' },
   { key: 'gemini', label: 'Google Gemini Pro Vision' },
@@ -39,10 +30,17 @@ const VLM_TO_PREF_KEY: Record<string, keyof import('../services/storage').Prefer
   llava: 'llavaApiKey',
 };
 
+interface ImageDimensions {
+  width: number;
+  height: number;
+}
+
+interface ParsedDiagram {
+  shapes: Shape[];
+  relationships: ShapeRelationship[];
+}
+
 const Home: React.FC = () => {
-  // Get a *factory* or *instance selector* instead of a single instance
-  // const vlmServiceFactory = useVLMServiceFactory(); // Assuming a factory hook
-  // For now, we will manually select the adapter
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diagramData, setDiagramData] = useState<ParsedDiagram | null>(null);
@@ -73,10 +71,9 @@ const Home: React.FC = () => {
       const dimensions = { width: img.naturalWidth, height: img.naturalHeight };
       setImageDimensions(dimensions);
       try {
-        // Manually select adapter based on state (replace with factory/hook later)
         const prefKey = VLM_TO_PREF_KEY[selectedVLM];
         const currentApiKey = prefKey ? preferences[prefKey] || '' : '';
-        const activeVlmService: VLMService = getVlmAdapter(selectedVLM, currentApiKey); // Use the placeholder factory
+        const activeVlmService: VLMService = getVlmAdapter(selectedVLM, currentApiKey);
 
         const vlmResponse = await activeVlmService.analyzeImage(dataUrl, currentApiKey);
         setRawVlmResponse(vlmResponse);
@@ -133,7 +130,6 @@ const Home: React.FC = () => {
 
   return (
     <div>
-      {/* VLM selection and settings */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <label className="me-2">VLM:</label>
@@ -170,6 +166,7 @@ const Home: React.FC = () => {
                 onClick={() => setShowRawJson(v => !v)}
                 aria-expanded={showRawJson}
                 aria-controls="extracted-json-box"
+                disabled={!rawVlmResponse}
               >
                 {showRawJson ? 'Hide' : 'Show'} Raw JSON
               </button>
@@ -200,7 +197,6 @@ const Home: React.FC = () => {
               />
             );
           })()}
-          {/* TODO: Add export/share controls here */}
         </>
       )}
     </div>

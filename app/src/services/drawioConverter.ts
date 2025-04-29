@@ -59,9 +59,6 @@ export function generateDrawioXml(
   // Use the smaller scale factor to maintain aspect ratio and fit within target bounds
   const scale = Math.min(scaleX, scaleY);
 
-  // Effective canvas height for Y-flipping after scaling - REMOVED
-  // const scaledContentHeight = originalDimensions.height * scale;
-
   // Separate shapes into triangles and non-triangles for Z-ordering
   const nonTriangles = shapes.filter(s => s.type !== 'triangle');
   const triangles = shapes.filter(s => s.type === 'triangle');
@@ -70,38 +67,101 @@ export function generateDrawioXml(
   const nonTriangleXml = nonTriangles.map(element => {
     // Scale coordinates and dimensions
     const scaledX = element.boundingBox.x * scale + CANVAS_MARGIN;
-    const scaledY = element.boundingBox.y * scale; // Scale Y without margin first
+    const scaledY = element.boundingBox.y * scale + CANVAS_MARGIN; // Simply add margin to scaled Y
     const scaledWidth = element.boundingBox.width * scale;
     const scaledHeight = element.boundingBox.height * scale;
-
-    // Coordinate transformation (Y-flip) - REMOVED as v2 prompt provides y-down coords
-    const drawioX = scaledX;
-    // Flip based on scaled content height, then add margin - OLD
-    // const drawioY = (scaledContentHeight - (scaledY + scaledHeight)) + CANVAS_MARGIN;
-    // NEW: Use scaled Y directly and add margin
-    const drawioY = scaledY + CANVAS_MARGIN;
 
     const drawioId = `el-${element.id}`; // Prefix element IDs
 
     let styleString = '';
+    // Calculate font size for text elements
+    let style = '';
+    if (element.type === 'text') {
+        const text = (element as TextShape).text || '';
+        const textLength = text.length;
+        // Slightly increased base font size calculation
+        const baseSize = Math.min(24, Math.max(12, Math.floor(scaledHeight * 0.8))); 
+        // Adjust size down for longer text
+        style = `fontSize=${textLength > 20 ? Math.max(12, baseSize * 0.8) : baseSize};`;
+    }
+    
     // Base shape style
     switch (element.type) {
-        case 'rectangle': styleString += 'shape=rectangle;'; break;
+        case 'rectangle': styleString += 'shape=rectangle;whiteSpace=wrap;html=1;'; break;
         case 'ellipse':
-        case 'circle': styleString += 'shape=ellipse;'; break;
-        case 'triangle': styleString += 'shape=triangle;'; break;
-        case 'parallelogram': styleString += 'shape=parallelogram;'; break;
-        case 'trapezoid': styleString += 'shape=trapezoid;'; break;
-        case 'rhombus': styleString += 'shape=rhombus;'; break;
-        case 'text': styleString += 'text;html=1;resizable=0;points=[];align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;'; break;
-        case 'line': styleString += 'shape=line;endArrow=none;'; break;
-        case 'arrow': styleString += 'shape=flexArrow;'; break; // Using flexArrow for better arrow control
-        default: styleString += 'shape=rectangle;'; break;
+        case 'circle': styleString += 'shape=ellipse;whiteSpace=wrap;html=1;'; break;
+        case 'triangle': styleString += 'shape=triangle;whiteSpace=wrap;html=1;'; break;
+        case 'parallelogram': styleString += 'shape=parallelogram;whiteSpace=wrap;html=1;'; break;
+        case 'trapezoid': 
+            styleString += 'shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;size=0.23;'; 
+            break;
+        case 'rhombus': 
+        case 'diamond':
+            styleString += 'shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;'; 
+            break;
+        case 'text': 
+            // Treat text as an invisible vertex
+            styleString += 'html=1;whiteSpace=wrap;';
+            styleString += 'align=center;verticalAlign=middle;overflow=width;';
+            styleString += 'autosize=1;'; // Re-enable autosize
+            styleString += style; // Apply calculated font size
+            
+            // Apply fill color ONLY if specified, otherwise transparent
+            if (element.style?.fill) {
+                styleString += `fillColor=${element.style.fill};`;
+            } else {
+                styleString += 'fillColor=none;'; 
+            }
+            // Apply font color ONLY if specified, otherwise default
+            if (element.style?.color) {
+                styleString += `fontColor=${element.style.color};`;
+            }
+            // Always ensure no border for the text vertex itself
+            styleString += 'strokeColor=none;';
+
+            // Reduce vertical spacing slightly
+            styleString += 'spacing=3;spacingTop=1;spacingBottom=1;';
+            break;
+        case 'line':
+            // Create edge instead of vertex
+            return `<mxCell id="${drawioId}" value="" style="endArrow=none;html=1;strokeWidth=2;${
+              element.style?.color ? `strokeColor=${element.style.color};` : ''
+            }" edge="1" parent="1">
+              <mxGeometry relative="1" as="geometry">
+                <mxPoint x="${scaledX}" y="${scaledY}" as="sourcePoint"/>
+                <mxPoint x="${scaledX + scaledWidth}" y="${scaledY + scaledHeight}" as="targetPoint"/>
+              </mxGeometry>
+            </mxCell>`;
+        case 'arrow':
+            // Create edge with arrow
+            return `<mxCell id="${drawioId}" value="" style="endArrow=classic;html=1;strokeWidth=2;${
+              element.style?.color ? `strokeColor=${element.style.color};` : ''
+            }" edge="1" parent="1">
+              <mxGeometry relative="1" as="geometry">
+                <mxPoint x="${scaledX}" y="${scaledY}" as="sourcePoint"/>
+                <mxPoint x="${scaledX + scaledWidth}" y="${scaledY + scaledHeight}" as="targetPoint"/>
+              </mxGeometry>
+            </mxCell>`;
+        case 'hexagon':
+            // Ensure correct perimeter and aspect ratio
+            styleString += 'shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;aspect=fixed;';
+            break;
+        case 'octagon':
+            // Ensure correct perimeter and aspect ratio
+            styleString += 'shape=octagon;perimeter=octagonPerimeter;whiteSpace=wrap;html=1;aspect=fixed;';
+            break;
+        default: styleString += 'shape=rectangle;whiteSpace=wrap;html=1;'; break;
     }
 
-    // Additional styles
-    if (element.style?.color) styleString += `strokeColor=${element.style.color};`;
-    if (element.style?.fill) styleString += `fillColor=${element.style.fill};`;
+    // Additional styles (applied to all vertex shapes AFTER base styles)
+    // Re-add fill color logic for non-text shapes
+    if (element.style?.fill && element.type !== 'text') {
+        styleString += `fillColor=${element.style.fill};`;
+    }
+    // Stroke color applies to the shape border (unless it's text)
+    if (element.style?.color && element.type !== 'text') {
+         styleString += `strokeColor=${element.style.color};`;
+    }
     if (element.style?.lineStyle && element.style.lineStyle !== 'solid') {
       styleString += `dashed=${element.style.lineStyle === 'dashed' ? 1 : 0};`;
       if (element.style.lineStyle === 'dotted') styleString += 'dashPattern=1 4;';
@@ -131,7 +191,7 @@ export function generateDrawioXml(
     }
 
     const label = escapeXml(element.type === 'text' ? (element as TextShape).text || '' : '');
-    const geometry = `<mxGeometry x="${drawioX}" y="${drawioY}" width="${scaledWidth}" height="${scaledHeight}" as="geometry" />`;
+    const geometry = `<mxGeometry x="${scaledX}" y="${scaledY}" width="${scaledWidth}" height="${scaledHeight}" as="geometry" />`;
 
     return `<mxCell id="${drawioId}" value="${label}" style="${styleString.replace(/;$/, '')}" vertex="1" parent="1">
       ${geometry}
