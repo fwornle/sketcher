@@ -12,7 +12,8 @@ import {
   TextShape,
   Parallelogram,
   Rhombus,
-  Style
+  Style,
+  Trapezoid
 } from './shapeModels';
 import { VLMServiceResponse } from './vlmService';
 
@@ -70,7 +71,7 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
     }
 
     const id = typeof el.id === 'number' ? String(el.id) : undefined; // Convert number ID to string for Shape model
-    let type = typeof el.type === 'string' ? el.type : undefined;
+    const type = typeof el.type === 'string' ? el.type : undefined;
     const bb = el.bounding_box;
     // Convert bounding_box (x1, y1, x2, y2) to expected format (x, y, width, height)
     const boundingBox = bb && typeof bb.x1 === 'number' && typeof bb.y1 === 'number' && typeof bb.x2 === 'number' && typeof bb.y2 === 'number'
@@ -100,10 +101,17 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
       return;
     }
 
-    // Map VLM types to internal ShapeType, handle aliases
-    if (type === 'square') type = 'rectangle';
-    if (type === 'line_segment') type = 'line';
-    const internalType = type as ShapeType;
+    // Explicitly check if the type is a valid ShapeType before casting
+    const validShapeTypes = new Set<ShapeType>([
+      'rectangle', 'circle', 'ellipse', 'triangle', 'arrow', 'line', 'text', 'parallelogram', 'rhombus', 'trapezoid'
+    ]);
+
+    if (!type || !validShapeTypes.has(type as ShapeType)) {
+      errors.push(`Unknown or unsupported shape type '${type || 'undefined'}' at index ${i}`);
+      return; // Skip adding unknown shapes
+    }
+
+    const internalType = type as ShapeType; // Now this cast is safer
 
     // Map to specific shape type
     let shape: Shape;
@@ -132,6 +140,9 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
       case 'rhombus':
         shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Rhombus;
         break;
+      case 'trapezoid':
+        shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Trapezoid;
+        break;
       case 'text':
         if (text) {
           shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as TextShape;
@@ -143,11 +154,10 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
         }
         break;
       // Handle "other_shape" or unsupported types
-      default:
-        errors.push(`Unknown or unsupported shape type '${type}' at index ${i}`);
-        // Optionally create a generic shape or skip
-        // shape = { id, type: 'rectangle', boundingBox, style, text: `Unsupported: ${type}`, orientation, role };
-        return; // Skip adding unknown shapes for now
+      // default case is no longer needed due to the check above
+      // default:
+      //   errors.push(`Unknown or unsupported shape type '${type}' at index ${i}`);
+      //   return; // Skip adding unknown shapes for now
     }
     shapes.push(shape);
 

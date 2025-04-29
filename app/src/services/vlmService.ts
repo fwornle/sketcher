@@ -52,10 +52,10 @@ interface BaseHeight { base: number; height: number; }
 // Replace `any` with `unknown` for better type safety, keep fallback for flexibility
 type ElementDimensions = WidthHeight | Radius | Length | BaseHeight | { [key: string]: unknown } | null;
 
-// Updated DiagramElement for v2 prompt schema
+// Updated DiagramElement to include 'trapezoid' as a valid type
 export interface DiagramElement {
   id: number; // Changed to number
-  type: string; // "rectangle", "square", "text", etc.
+  type: 'rectangle' | 'square' | 'parallelogram' | 'rhombus' | 'triangle' | 'circle' | 'ellipse' | 'arrow' | 'line_segment' | 'text' | 'trapezoid' | 'other_shape'; // Added 'trapezoid'
   bounding_box: BoundingBoxX1Y1X2Y2;
   center_coordinates?: { cx: number; cy: number }; // Optional as it's approximate
   dimensions?: ElementDimensions; // Use the specific union type
@@ -103,24 +103,25 @@ export interface VLMService {
  * Each version should include rationale and example usage in comments.
  */
 const GEMINI_PROMPTS: Record<string, string> = {
-  v1: `You are an expert visual analysis assistant specialized in interpreting whiteboard sketches containing geometric shapes and text. Your task is to meticulously analyze the provided image of a whiteboard sketch and extract comprehensive information about all its elements, their properties, and their relationships, outputting the result ONLY as a valid JSON object.
+  v1: `You are an expert visual analysis assistant specializing in interpreting whiteboard sketches containing geometric shapes and text. Your task is to meticulously analyze the provided image of a whiteboard sketch and extract comprehensive information about all its elements, their properties, and their relationships, outputting the result ONLY as a valid JSON object. It is absolutely critical that you achieve precise detection of ALL geometric shapes, accurately determine their exact size, and pinpoint their correct position, with a paramount focus on the **relative positioning and sizes of all detected shapes to one another**.
 
   **JSON Output Requirements:**
   
   The JSON object must have the following top-level keys:
   1.  \`analysis_summary\`: An object containing:
       * \`total_distinct_elements\`: (Integer) The total number of distinct geometric shapes and text blocks identified.
-      * \`composition_interpretation\`: (String) A brief description of what the overall sketch might represent (e.g., "Flowchart illustrating a process", "Mind map exploring ideas", "Geometric construction study", "Basic UI wireframe").
+      * \`composition_interpretation\`: (String) A brief description of what the overall sketch might represent (e.g., "Flowchart illustrating a process", "Mind map exploring ideas", "Geometric construction study", "Architectural sketch/Simple house drawing").
   2.  \`elements\`: An array of objects, where each object represents a single detected element (shape or text). Each element object must have the following keys:
       * \`id\`: (Integer) A unique sequential identifier for each element (starting from 1).
-      * \`type\`: (String) The type of the element. Must be one of: "rectangle", "square", "parallelogram", "rhombus", "triangle", "circle", "ellipse", "arrow", "line_segment", "text", "other_shape".
-      * \`bounding_box\`: An object with \`x1\`, \`y1\`, \`x2\`, \`y2\` keys (Integers), representing the top-left and bottom-right pixel coordinates of the element's bounding box. Assume origin (0,0) is the top-left corner of the image.
+      * \`type\`: (String) The type of the element. Must be one of: "rectangle", "square", "parallelogram", "rhombus", "triangle", "circle", "ellipse", "arrow", "line_segment", "text", **"trapezoid"**, "other_shape". (Explicitly include "trapezoid").
+      * \`bounding_box\`: An object with \`x1\`, \`y1\`, \`x2\`, \`y2\` keys (Integers), representing the top-left and bottom-right pixel coordinates of the element's bounding box. Assume origin (0,0) is the top-left corner of the image. **Ensure these coordinates are as precise as possible.**
       * \`center_coordinates\`: An object with \`cx\`, \`cy\` keys (Floats or Integers), representing the approximate center coordinates.
       * \`dimensions\`: An object containing size information appropriate for the shape type:
-          * For rectangles/squares/parallelograms/rhombus/ellipses: \`width\` (Integer), \`height\` (Integer).
+          * For rectangles/squares/parallelograms/rhombus/ellipses/trapezoids: \`width\` (Integer), \`height\` (Integer). (Include trapezoids here).
           * For circles: \`radius\` (Float or Integer).
           * For triangles: \`base\` (Integer), \`height\` (Integer) (if easily determinable) or side lengths if possible.
           * For line_segments/arrows: \`length\` (Float or Integer).
+          **Prioritize calculating dimensions accurately based on detected outlines and bounding boxes.**
       * \`orientation_angle\`: (Float) Estimated angle of rotation in degrees (0 for horizontal/vertical alignment, positive for counter-clockwise rotation), if applicable and significantly non-zero (e.g., > 5 degrees). Default to 0 if not applicable or axis-aligned.
       * \`style_info\`: An object with keys like:
           * \`line_thickness\`: (String) e.g., "thin", "medium", "thick".
@@ -130,19 +131,24 @@ const GEMINI_PROMPTS: Record<string, string> = {
       * \`text_content\`: (String) The recognized text within the element. Null if not a text element.
       * \`relationships\`: An array of objects describing spatial relationships to *other* elements. Each relationship object should have:
           * \`related_element_id\`: (Integer) The \`id\` of the other element.
-          * \`relation_type\`: (String) The type of relationship (e.g., "left_of", "right_of", "above", "below", "overlaps_with", "partially_overlaps_with", "inside", "contains", "connected_to_start", "connected_to_end", "points_to"). Be precise (e.g., specify which part overlaps if possible).
-  3.  \`plausibility_check_notes\`: (String) Describe potential inconsistencies or confirmations regarding the extracted coordinates and dimensions. For example, "Bounding box dimensions generally match calculated width/height for rectangles", "Overlap relationships seem consistent with bounding box intersections", or "Detected center/radius for circle seems consistent with visual representation".
+          * \`relation_type\`: (String) The type of relationship (e.g., "left_of", "right_of", "above", "below", "overlaps_with", "partially_overlaps_with", "inside", "contains", "connected_to_start", "connected_to_end", "points_to"). **Be extremely precise** (e.g., specify which edge is aligned with or next to which other edge, describe overlaps accurately).
+          **Quantify relationships where possible:** Instead of just "above", consider "bottom edge is slightly above top edge of X", or if possible, include relative distances or overlaps as a percentage of either element's size or the total image size.
+  
+  3.  \`plausibility_check_notes\`: (String) Describe potential inconsistencies or confirmations regarding the extracted coordinates and dimensions. **Critically evaluate the consistency of detected shapes, sizes, and relative positions.** For example, "The bottom edge of the triangle is aligned with the top edge of the rectangle below it, as expected from bounding box analysis", "The chimney's right edge is vertically aligned with the right vertex of the roof trapezoid", or "Detected dimensions for the roof trapezoid align with visual proportions".
   
   **Instructions:**
   
-  1.  Carefully examine the entire whiteboard sketch image.
-  2.  Identify every distinct geometric shape (rectangles, squares, circles, ellipses, triangles, parallelograms, rhombus, arrows, lines) and block of text.
-  3.  For each element, determine its type, precise bounding box, approximate center, dimensions, orientation, style, and any text content.
-  4.  Analyze the spatial relationships between pairs of elements (position, overlap, connection). Focus on immediate and clear relationships.
-  5.  Count the total number of distinct elements identified.
-  6.  Provide a concise interpretation of the sketch's likely purpose or subject.
-  7.  Generate ONLY the JSON object conforming strictly to the structure specified above. Do not include any explanatory text before or after the JSON object.
-  8.  Attempt to cross-verify the geometric data (e.g., do bounding box coordinates match the reported width/height?) and note findings in \`plausibility_check_notes\`.
+  1.  Carefully and meticulously examine the entire whiteboard sketch image.
+  2.  **Identify *every single* distinct geometric shape** (rectangles, squares, circles, ellipses, triangles, **TRAPEZOIDS**, parallelograms, rhombus, arrows, lines) and block of text. Do not miss any element.
+      Pay close attention to potentially unusual or approximate shapes, e.g. slightly crooked and not fully closed rectangles, symmetric and asymetric triangles pointing up/left/down/..., trapezoids with differently angled sides - say, 45° left side and -20° right side, black bold arrow pointing to the right at 30°, etc. **Explicitly look for and identify the trapezoidal shape of the roof.**
+  3.  Pay close attention to the total number of geometric forms in the sketch image and **ensure that you have mapped every single discernable element to a detected shape** in the \`elements\` array.
+  4.  For each element, determine its type, the **most precise possible** bounding box, approximate center, dimensions, orientation, style, and any text content.
+  5.  **Critically analyze and verify** the spatial relationships between *all* pairs of elements (position, overlap, connection). Focus on immediate and clear relationships, but also consider broader alignments.
+      **Perform internal verification:** Cross-reference the bounding box coordinates, dimensions, and relative positions. For example, if element A is reported as "above" element B, confirm that A's y2 coordinate is less than B's y1 coordinate (allowing for slight margins due to line thickness). If possible, calculate relative distances or overlaps between key points or edges of related shapes (e.g., percentage distance between the bottom of the triangle and the top of the roof). Use these internal checks to refine your reported coordinates and relationships for maximum accuracy. **Ensure the reported relative positions and sizes precisely reflect the visual appearance.**
+  6.  Count the total number of distinct elements identified and report it accurately.
+  7.  Provide a concise interpretation of the sketch's likely purpose or subject. Recognizing it as a "simple house drawing" is a valid interpretation.
+  8.  Generate **ONLY** the JSON object conforming strictly to the structure specified above. Do not include any explanatory text before or after the JSON object.
+  9.  Use the \`plausibility_check_notes\` to explicitly comment on the accuracy and consistency of your geometric and relational findings, noting where your analysis confirms the visual sketch and where any minor ambiguities might exist (though strive for high accuracy).
   
   Analyze the provided image now and generate the JSON output.`
 };
@@ -479,7 +485,7 @@ class ClaudeAdapter implements VLMService {
         const msg = await anthropic.messages.create({
           model: 'claude-3-opus-20240229',
           max_tokens: 4096,
-          temperature: 0.2,
+          temperature: 0,
           system: 'You are an expert visual analysis assistant.',
           messages: [
             {
