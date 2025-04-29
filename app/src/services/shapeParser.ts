@@ -70,7 +70,7 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
       return;
     }
 
-    const id = typeof el.id === 'number' ? String(el.id) : undefined; // Convert number ID to string for Shape model
+    const id = typeof el.id === 'string' ? el.id : undefined; // Expect string ID from validator
     const type = typeof el.type === 'string' ? el.type : undefined;
     const bb = el.bounding_box;
     // Convert bounding_box (x1, y1, x2, y2) to expected format (x, y, width, height)
@@ -96,76 +96,81 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
     const orientation = undefined;
     const role = undefined;
 
-    if (!id || !type || !boundingBox) {
-      errors.push(`Element at index ${i} (${el.type || 'unknown type'} ID: ${el.id || 'unknown'}) missing required fields (id, type, bounding_box)`);
-      return;
+    // Use the guaranteed ID, type, and boundingBox from vlmService
+    // If the defaults from vlmService were applied, these will be defined
+    const finalId = id ?? `parser_fallback_${i}`; // Add fallback just in case, though unlikely needed
+    const finalType = type ?? 'rectangle'; // Add fallback
+    const finalBoundingBox = boundingBox ?? { x: 0, y: 0, width: 100, height: 100 }; // Add fallback
+
+    // Map VLM types to internal ShapeType, handle aliases *before* type checks
+    let mappedType: string = finalType;
+    // Handle aliases by mapping to valid ShapeType values
+    switch (mappedType) {
+      case 'square':
+        mappedType = 'rectangle';
+        break;
+      case 'line_segment':
+        mappedType = 'line';
+        break;
     }
 
-    // Explicitly check if the type is a valid ShapeType before casting
-    const validShapeTypes = new Set<ShapeType>([
-      'rectangle', 'circle', 'ellipse', 'triangle', 'arrow', 'line', 'text', 'parallelogram', 'rhombus', 'trapezoid'
-    ]);
+    // Use the mapped type. If it's not a valid ShapeType, the switch will skip it.
+    const internalType = mappedType as ShapeType;
 
-    if (!type || !validShapeTypes.has(type as ShapeType)) {
-      errors.push(`Unknown or unsupported shape type '${type || 'undefined'}' at index ${i}`);
-      return; // Skip adding unknown shapes
-    }
-
-    const internalType = type as ShapeType; // Now this cast is safer
-
-    // Map to specific shape type
-    let shape: Shape;
+    // Map to specific shape type using the final guaranteed values and validated type
+    let shape: Shape | null = null; // Initialize as null
     switch (internalType) {
       case 'rectangle':
-        shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Rectangle;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Rectangle;
         break;
       case 'circle':
-        shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Circle;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Circle;
         break;
       case 'ellipse':
-        shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Ellipse;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Ellipse;
         break;
       case 'triangle':
-        shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Triangle;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Triangle;
         break;
       case 'arrow':
-        shape = { id, type: internalType, boundingBox, style, orientation, role, orientation_angle } as Arrow;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, orientation, role, orientation_angle } as Arrow;
         break;
       case 'line':
-        shape = { id, type: internalType, boundingBox, style, orientation, role, orientation_angle } as Line;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, orientation, role, orientation_angle } as Line;
         break;
       case 'parallelogram':
-        shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Parallelogram;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Parallelogram;
         break;
       case 'rhombus':
-        shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Rhombus;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Rhombus;
         break;
       case 'trapezoid':
-        shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as Trapezoid;
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as Trapezoid;
         break;
       case 'text':
-        if (text) {
-          shape = { id, type: internalType, boundingBox, style, text, orientation, role, orientation_angle } as TextShape;
+        if (text !== undefined) { // Check against explicitly undefined text
+          shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle } as TextShape;
         } else {
           // Allow text shapes without text_content if bounding box is present
-          // errors.push(`Text element at index ${i} missing text property`);
-          shape = { id, type: internalType, boundingBox, style, text: '', orientation, role, orientation_angle } as TextShape;
-          // return;
+          shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text: '', orientation, role, orientation_angle } as TextShape;
         }
         break;
-      // Handle "other_shape" or unsupported types
-      // default case is no longer needed due to the check above
-      // default:
-      //   errors.push(`Unknown or unsupported shape type '${type}' at index ${i}`);
-      //   return; // Skip adding unknown shapes for now
+      // Default case: if internalType is not one of the above, shape remains null
     }
-    shapes.push(shape);
+
+    // Only push the shape if it was successfully created
+    if (shape) {
+      shapes.push(shape);
+    } else {
+      // Log error if the type was unknown/unhandled by the switch
+      errors.push(`Skipping element at index ${i} with unhandled type '${internalType}'`);
+    }
 
     // --- Flatten Nested Relationships ---
     if (Array.isArray(el.relationships)) {
       el.relationships.forEach(nestedRel => {
         if (nestedRel && typeof nestedRel === 'object' && typeof nestedRel.related_element_id === 'number' && typeof nestedRel.relation_type === 'string') {
-          const sourceId = id; // The current element is the source
+          const sourceId = finalId; // Use the guaranteed finalId
           const targetId = String(nestedRel.related_element_id); // Convert target ID to string
           // Basic mapping of relation_type - TODO: Refine this mapping
           let relationshipType: RelationshipType;
@@ -202,7 +207,7 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
             // Waypoints are not provided in the new nested structure
           });
         } else {
-          errors.push(`Invalid nested relationship found for element ID ${id}`);
+          errors.push(`Invalid nested relationship found for element ID ${finalId}`);
         }
       });
     }

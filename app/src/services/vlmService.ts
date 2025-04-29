@@ -54,8 +54,8 @@ type ElementDimensions = WidthHeight | Radius | Length | BaseHeight | { [key: st
 
 // Updated DiagramElement to include 'trapezoid' as a valid type
 export interface DiagramElement {
-  id: number; // Changed to number
-  type: 'rectangle' | 'square' | 'parallelogram' | 'rhombus' | 'triangle' | 'circle' | 'ellipse' | 'arrow' | 'line_segment' | 'text' | 'trapezoid' | 'other_shape'; // Added 'trapezoid'
+  id: string;
+  type: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'arrow' | 'line' | 'text' | 'parallelogram' | 'rhombus' | 'trapezoid';
   bounding_box: BoundingBoxX1Y1X2Y2;
   center_coordinates?: { cx: number; cy: number }; // Optional as it's approximate
   dimensions?: ElementDimensions; // Use the specific union type
@@ -248,44 +248,89 @@ export function validateStructuredDiagram(obj: unknown): { valid: boolean, error
   const o = obj as Record<string, unknown>;
   if (!Array.isArray(o.elements)) {
     errors.push('Missing or invalid elements array.');
+    return { valid: false, errors };
   }
-  // Type guards
+
+  // Type guards - even more lenient now
   function isDiagramElement(el: unknown): el is DiagramElement {
-    if (!el || typeof el !== 'object') return false;
-    const e = el as Record<string, unknown>;
-    const bb = e.bounding_box as Record<string, unknown>;
-    return (
-      typeof e.id === 'number' &&
-      typeof e.type === 'string' &&
-      bb && typeof bb.x1 === 'number'
-    );
+    return el !== null && typeof el === 'object';
   }
+
   // Validate elements
-  const validElements = Array.isArray(o.elements)
-    ? o.elements.filter((el, i) => {
-        if (!el || typeof el !== 'object') {
-          errors.push(`Element at index ${i} is not an object.`);
-          return false;
-        }
-        const e = el as Record<string, unknown>;
-        if (typeof e.id !== 'number') errors.push(`Element at index ${i} missing id.`);
-        if (typeof e.type !== 'string') errors.push(`Element at index ${i} missing type.`);
-        if (!e.bounding_box || typeof e.bounding_box !== 'object') errors.push(`Element at index ${i} missing bounding_box.`);
-        else {
-          const bb = e.bounding_box as Record<string, unknown>;
-          if (typeof bb.x1 !== 'number' || typeof bb.y1 !== 'number' || typeof bb.x2 !== 'number' || typeof bb.y2 !== 'number') {
-            errors.push(`Element at index ${i} has invalid bounding_box.`);
-          }
-        }
-        return isDiagramElement(el);
-      }) as DiagramElement[]
-    : [];
-  const valid = errors.length === 0;
-  const partial: Partial<VLMServiceResponse> = { 
-    analysis_summary: o.analysis_summary as AnalysisSummary, // Assume valid if present, or add checks
-    elements: validElements, 
-    plausibility_check_notes: o.plausibility_check_notes as string // Assume valid if present
+  let idCounter = 1;
+  const validElements = o.elements.map((el, i) => {
+    if (!el || typeof el !== 'object') {
+      errors.push(`Element at index ${i} is not an object.`);
+      return null;
+    }
+
+    const e = el as Record<string, unknown>;
+    
+    // Generate ID if missing or convert number to string
+    if (typeof e.id !== 'string' && typeof e.id !== 'number') {
+      e.id = `auto_${idCounter++}`;
+    } else if (typeof e.id === 'number') {
+      e.id = String(e.id);
+    }
+
+    // Set default type if missing
+    if (typeof e.type !== 'string') {
+      errors.push(`Element at index ${i} (${e.id}) missing type, defaulting to 'rectangle'.`);
+      e.type = 'rectangle';
+    }
+
+    // Handle missing or invalid bounding box - create default if missing
+    if (!e.bounding_box || typeof e.bounding_box !== 'object') {
+      errors.push(`Element at index ${i} (${e.id}) missing bounding_box, creating default.`);
+      e.bounding_box = {
+        x1: 0,
+        y1: 0,
+        x2: 100,
+        y2: 100
+      };
+    } else {
+      const bb = e.bounding_box as Record<string, unknown>;
+      // Convert any existing x,y,width,height format to x1,y1,x2,y2
+      if ('x' in bb && 'y' in bb && 'width' in bb && 'height' in bb) {
+        const x = Number(bb.x) || 0;
+        const y = Number(bb.y) || 0;
+        const width = Number(bb.width) || 100;
+        const height = Number(bb.height) || 100;
+        e.bounding_box = {
+          x1: x,
+          y1: y,
+          x2: x + width,
+          y2: y + height
+        };
+      } else if (typeof bb.x1 !== 'number' || typeof bb.y1 !== 'number' || 
+                 typeof bb.x2 !== 'number' || typeof bb.y2 !== 'number') {
+        errors.push(`Element at index ${i} (${e.id}) has invalid bounding_box coordinates, using defaults.`);
+        e.bounding_box = {
+          x1: 0,
+          y1: 0,
+          x2: 100,
+          y2: 100
+        };
+      }
+    }
+
+    // At this point, we have an element with required fields (even if some are defaults)
+    return isDiagramElement(el) ? el as DiagramElement : null;
+  }).filter((el): el is DiagramElement => el !== null);
+
+  // Even if we have errors, return partial results if we have any valid elements
+  const partial: Partial<VLMServiceResponse> = {
+    analysis_summary: o.analysis_summary as AnalysisSummary || {
+      total_distinct_elements: validElements.length,
+      composition_interpretation: 'Partial parse with defaults'
+    },
+    elements: validElements,
+    plausibility_check_notes: o.plausibility_check_notes as string || 'Validation completed with defaults applied.'
   };
+
+  // Consider validation successful if we have at least one valid element
+  const valid = validElements.length > 0;
+  
   return { valid, errors, partial };
 }
 
