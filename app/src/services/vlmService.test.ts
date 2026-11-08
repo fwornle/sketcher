@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GEMINI_CACHE, parseImageDataUrl, validateStructuredDiagram } from './vlmService';
+import { DIAGRAM_JSON_SCHEMA, GEMINI_CACHE, parseImageDataUrl, validateStructuredDiagram } from './vlmService';
 
 // Mock GeminiAdapter and dependencies
 import type { VLMService, VLMServiceResponse } from './vlmService';
@@ -99,5 +99,40 @@ describe('parseImageDataUrl', () => {
   it('rejects formats the models are not sent', () => {
     expect(() => parseImageDataUrl('data:image/gif;base64,R0lGOD')).toThrow('Only PNG and JPEG images are supported.');
     expect(() => parseImageDataUrl('not a data url')).toThrow('Only PNG and JPEG images are supported.');
+  });
+});
+
+describe('DIAGRAM_JSON_SCHEMA', () => {
+  // Structured outputs reject objects that allow extra properties or leave properties optional
+  function objectSchemas(node: unknown): Array<{ properties: Record<string, unknown>; required: string[]; additionalProperties: unknown }> {
+    if (!node || typeof node !== 'object') return [];
+    const n = node as Record<string, unknown>;
+    const own = n.type === 'object' ? [n as never] : [];
+    return [...own, ...Object.values(n).flatMap(objectSchemas)];
+  }
+
+  it('closes every object and requires all of its properties', () => {
+    const objects = objectSchemas(DIAGRAM_JSON_SCHEMA);
+    expect(objects.length).toBeGreaterThan(5);
+    for (const o of objects) {
+      expect(o.additionalProperties).toBe(false);
+      expect([...o.required].sort()).toEqual(Object.keys(o.properties).sort());
+    }
+  });
+
+  it('accepts what the validator accepts', () => {
+    const sample = {
+      analysis_summary: { total_distinct_elements: 1, composition_interpretation: 'A box' },
+      elements: [{
+        id: 1, type: 'rectangle', bounding_box: { x1: 0, y1: 0, x2: 10, y2: 10 },
+        center_coordinates: { cx: 5, cy: 5 },
+        dimensions: { width: 10, height: 10, radius: null, length: null, base: null },
+        orientation_angle: 0,
+        style_info: { line_thickness: 'medium', line_style: 'solid', color: 'black', fill: 'none' },
+        text_content: null, relationships: [],
+      }],
+      plausibility_check_notes: 'ok',
+    };
+    expect(validateStructuredDiagram(sample).valid).toBe(true);
   });
 });

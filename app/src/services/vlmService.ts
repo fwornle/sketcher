@@ -153,6 +153,85 @@ const GEMINI_PROMPTS: Record<string, string> = {
 };
 
 /**
+ * JSON schema of the answer the analysis prompt asks for, used where a provider can enforce
+ * it (Claude structured outputs). Every object sets additionalProperties: false and lists all
+ * its properties as required, as structured outputs demand; absent values are null.
+ */
+const nullableNumber = { anyOf: [{ type: 'number' }, { type: 'null' }] };
+export const DIAGRAM_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['analysis_summary', 'elements', 'plausibility_check_notes'],
+  properties: {
+    analysis_summary: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['total_distinct_elements', 'composition_interpretation'],
+      properties: {
+        total_distinct_elements: { type: 'integer' },
+        composition_interpretation: { type: 'string' },
+      },
+    },
+    elements: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'type', 'bounding_box', 'center_coordinates', 'dimensions', 'orientation_angle', 'style_info', 'text_content', 'relationships'],
+        properties: {
+          id: { type: 'integer' },
+          type: {
+            type: 'string',
+            enum: ['rectangle', 'square', 'parallelogram', 'rhombus', 'triangle', 'circle', 'ellipse', 'arrow', 'line_segment', 'text', 'trapezoid', 'other_shape'],
+          },
+          bounding_box: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['x1', 'y1', 'x2', 'y2'],
+            properties: { x1: { type: 'integer' }, y1: { type: 'integer' }, x2: { type: 'integer' }, y2: { type: 'integer' } },
+          },
+          center_coordinates: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['cx', 'cy'],
+            properties: { cx: { type: 'number' }, cy: { type: 'number' } },
+          },
+          dimensions: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['width', 'height', 'radius', 'length', 'base'],
+            properties: { width: nullableNumber, height: nullableNumber, radius: nullableNumber, length: nullableNumber, base: nullableNumber },
+          },
+          orientation_angle: { type: 'number' },
+          style_info: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['line_thickness', 'line_style', 'color', 'fill'],
+            properties: {
+              line_thickness: { type: 'string', enum: ['thin', 'medium', 'thick'] },
+              line_style: { type: 'string', enum: ['solid', 'dashed', 'dotted'] },
+              color: { type: 'string' },
+              fill: { type: 'string' },
+            },
+          },
+          text_content: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+          relationships: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['related_element_id', 'relation_type'],
+              properties: { related_element_id: { type: 'integer' }, relation_type: { type: 'string' } },
+            },
+          },
+        },
+      },
+    },
+    plausibility_check_notes: { type: 'string' },
+  },
+};
+
+/**
  * Returns the Gemini prompt for the given version.
  * @param version Prompt version key (default: 'v1')
  */
@@ -596,6 +675,8 @@ class ClaudeAdapter implements VLMService {
           // model Anthropic recommends for that refusal category, within the same call.
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default',
+          // Structured outputs: the API guarantees the answer is valid JSON matching the schema
+          output_config: { format: { type: 'json_schema', schema: DIAGRAM_JSON_SCHEMA } },
           system: 'You are an expert visual analysis assistant.',
           messages: [
             {
@@ -631,9 +712,7 @@ class ClaudeAdapter implements VLMService {
           .filter((block): block is Anthropic.Beta.BetaTextBlock => block.type === 'text')
           .map(block => block.text)
           .join('');
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new GeneralAPIError('No JSON found in Claude response.');
-        const parsed = JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(text);
         // Validate against schema
         const validation = validateStructuredDiagram(parsed);
         if (!validation.valid) {
