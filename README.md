@@ -31,27 +31,36 @@ Open http://localhost:5173 in your browser.
 
 ## Project Structure
 
+The app follows the [ui-template](https://github.com/fwornle/ui-template) layout and its MVI pattern
+(Model = slice state, View = components, Intent = actions/thunks):
+
 ```
-sketcher/
-├── app/                    # React application (Vite + TypeScript)
-│   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── layouts/        # Layout templates
-│   │   ├── pages/          # Page components
-│   │   ├── services/       # API and data services
-│   │   ├── utils/          # Utility functions
-│   │   └── assets/         # Static assets
-│   └── package.json
-├── .taskmaster/            # Task-master configuration and tasks
-└── package.json            # Root package (scripts + task-master)
+app/src/
+├── components/
+│   ├── Layout.tsx          # App shell: TopBar + SidebarMenu + <Outlet/> + BottomBar
+│   ├── layout/             # TopBar, BottomBar, SidebarMenu (hover left edge), AppLogo
+│   ├── settings/           # SettingsModal (theme, vision model, export format, API keys)
+│   └── ui/                 # LoggingControl (log levels / categories)
+├── features/sketch/        # Sketch-to-diagram feature (MVI)
+│   ├── sketchSlice.ts      # Model + intents (analyzeSketch thunk) + selectors (drawio XML)
+│   ├── vlmProviders.ts     # Supported VLMs and their API-key fields
+│   └── components/         # SketchWorkspace, ImageUpload, VlmSelector, AnalysisResult, DrawioViewer
+├── store/                  # Redux store + preferences / sidebar slices
+├── hooks/                  # Typed useAppDispatch / useAppSelector
+├── context/ThemeProvider   # Applies light / dark / system theme from preferences
+├── routes/                 # createBrowserRouter config
+├── pages/                  # HomePage, AboutPage
+├── services/               # VLM adapters, shape parser, drawio converter, storage
+└── utils/logging/          # Categorised console Logger (VLM, PARSER, DIAGRAM, UI, ...)
 ```
 
 ## Tech Stack
 
 - React 19 + TypeScript
-- Vite for development and building
-- Bootstrap 5 for UI
-- React Router for navigation
+- Vite 7
+- Tailwind CSS v4 with shadcn/ui design tokens, lucide-react icons, Headless UI
+- Redux Toolkit (MVI) + React Redux
+- React Router 7
 - Vitest for testing
 
 ## VLM/LLM Integration
@@ -66,12 +75,13 @@ The app integrates with Gemini API to analyze uploaded whiteboard images:
 ### Setup
 
 1. Start the app: `npm run dev`
-2. Open Preferences (gear icon) and enter your Gemini API key
+2. Open Settings (gear icon) → API Keys and enter your Gemini (or Claude / GPT-4o) API key
 3. Upload a whiteboard image to extract diagram data
 
 ### Troubleshooting
 
-- **API Key Issues:** Ensure a valid Gemini API key is set in preferences
+- **API Key Issues:** Ensure a valid API key for the selected model is set in Settings
+- **Debugging:** Use the log icon in the top bar to enable DEBUG/TRACE levels per category
 - **Quota/Rate Limits:** Wait and retry, or check API usage
 - **Network Errors:** Check internet connection and API endpoint
 - **Malformed Responses:** Check prompt version and model output

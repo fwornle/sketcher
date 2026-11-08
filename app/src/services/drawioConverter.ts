@@ -6,6 +6,7 @@
  */
 import type { Shape, ShapeRelationship, TextShape } from './shapeModels';
 import pako from 'pako';
+import { Logger } from '@/utils/logging';
 
 /**
  * Represents the dimensions of the original image.
@@ -48,7 +49,7 @@ export function generateDrawioXml(
   const CANVAS_MARGIN = 50; // Add some visual padding within the Drawio canvas
 
   if (!originalDimensions || originalDimensions.width === 0 || originalDimensions.height === 0) {
-    console.error('Invalid original image dimensions provided to generateDrawioXml');
+    Logger.error(Logger.Categories.DIAGRAM, 'Invalid original image dimensions provided to generateDrawioXml');
     // Return a minimal valid XML to avoid breaking DrawioViewer
     return `<?xml version="1.0" encoding="UTF-8"?><mxfile><diagram><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>`;
   }

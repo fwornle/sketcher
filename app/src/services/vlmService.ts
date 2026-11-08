@@ -1,5 +1,4 @@
-import { usePreferences } from '../context/PreferencesContext';
-import { Preferences } from './storage';
+import { Logger } from '@/utils/logging';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 
@@ -90,7 +89,7 @@ export interface VLMServiceResponse {
 }
 
 export interface VLMService {
-  analyzeImage(dataUrl: string, vlmType: string, apiKey?: string): Promise<VLMServiceResponse>;
+  analyzeImage(dataUrl: string, apiKey?: string): Promise<VLMServiceResponse>;
 }
 
 /**
@@ -385,7 +384,7 @@ class GeminiAdapter implements VLMService {
    * @returns Promise resolving to a StructuredDiagram
    */
   async analyzeImage(imageDataUrl: string, apiKey?: string): Promise<VLMServiceResponse> {
-    console.log('[Gemini] Analyzing with Gemini adapter...', { apiKeyProvided: !!apiKey });
+    Logger.debug(Logger.Categories.VLM, '[Gemini] Analyzing with Gemini adapter...', { apiKeyProvided: !!apiKey });
     const imageHash = await hashImageData(imageDataUrl);
     // Check cache first
     if (GEMINI_CACHE.has(imageHash)) {
@@ -393,7 +392,7 @@ class GeminiAdapter implements VLMService {
       const cached = GEMINI_CACHE.get(imageHash)!;
       GEMINI_CACHE.delete(imageHash);
       GEMINI_CACHE.set(imageHash, cached);
-      console.info('[Gemini] Cache hit for image');
+      Logger.info(Logger.Categories.VLM, '[Gemini] Cache hit for image');
       return cached;
     }
     const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + (apiKey || this.apiKey);
@@ -412,26 +411,26 @@ class GeminiAdapter implements VLMService {
     let lastError: unknown = null;
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
-        console.info(`[Gemini] Request (attempt ${attempt + 1}):`, endpoint, { ...requestBody, contents: '[omitted image data]' });
+        Logger.info(Logger.Categories.VLM, `[Gemini] Request (attempt ${attempt + 1}):`, endpoint, { ...requestBody, contents: '[omitted image data]' });
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
         });
         const resText = await res.clone().text();
-        console.info(`[Gemini] Response (attempt ${attempt + 1}):`, res.status, res.statusText, resText);
+        Logger.info(Logger.Categories.VLM, `[Gemini] Response (attempt ${attempt + 1}):`, res.status, res.statusText, resText);
         if (!res.ok) {
           // Handle specific error types
           if (res.status === 401 || res.status === 403) {
-            console.error('[Gemini] Authentication error:', res.status, res.statusText);
+            Logger.error(Logger.Categories.VLM, '[Gemini] Authentication error:', res.status, res.statusText);
             throw new AuthenticationError('Authentication failed. Please check your Gemini API key.');
           }
           if (res.status === 429) {
-            console.warn('[Gemini] Rate limit exceeded:', res.status, res.statusText);
+            Logger.warn(Logger.Categories.VLM, '[Gemini] Rate limit exceeded:', res.status, res.statusText);
             throw new RateLimitError('Gemini API rate limit exceeded. Please wait and try again later.');
           }
           if (res.status === 402 || resText.toLowerCase().includes('quota')) {
-            console.warn('[Gemini] Quota exceeded:', res.status, res.statusText);
+            Logger.warn(Logger.Categories.VLM, '[Gemini] Quota exceeded:', res.status, res.statusText);
             throw new QuotaExceededError('Gemini API quota exceeded. Please check your usage or billing.');
           }
           if (res.status >= 500 && res.status < 600) {
@@ -445,7 +444,7 @@ class GeminiAdapter implements VLMService {
         const text = rawResponseData?.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (!text) {
-          console.error("Invalid response structure or missing text content from Gemini:", rawResponseData);
+          Logger.error(Logger.Categories.VLM, "Invalid response structure or missing text content from Gemini:", rawResponseData);
           throw new GeneralAPIError('No valid text content found in Gemini response.');
         }
 
@@ -458,17 +457,17 @@ class GeminiAdapter implements VLMService {
           .trim();                       // Trim whitespace
 
         let parsed: unknown;
-        console.log("Attempting to parse cleaned text:", cleanedText); // Log cleaned text
+        Logger.debug(Logger.Categories.VLM, "Attempting to parse cleaned text:", cleanedText); // Log cleaned text
         try {
             // Attempt to parse the cleaned text directly
             parsed = JSON.parse(cleanedText);
         } catch (parseError) {
-            console.warn("Parsing cleaned text failed, attempting regex fallback...", parseError);
+            Logger.warn(Logger.Categories.VLM, "Parsing cleaned text failed, attempting regex fallback...", parseError);
             // Fallback: Try regex match on original text
             // Use non-greedy match to find the first potential JSON object
             const jsonMatch = text.match(/\{([\s\S]*?)\}/);
             if (jsonMatch && jsonMatch[0]) {
-                console.log("Regex fallback match found:", jsonMatch[0]);
+                Logger.debug(Logger.Categories.VLM, "Regex fallback match found:", jsonMatch[0]);
                 // Clean the regex match as well before parsing
                 const cleanedMatch = jsonMatch[0]
                     .replace(/\/\/.*$/gm, '')
@@ -476,16 +475,16 @@ class GeminiAdapter implements VLMService {
                     // Apply robust fence removal here too, just in case regex included them
                     .replace(/^\s*```(?:json)?\s*\n?|\n?\s*```\s*$/gim, '')
                     .trim();
-                console.log("Attempting to parse cleaned regex match:", cleanedMatch); // Log cleaned match
+                Logger.debug(Logger.Categories.VLM, "Attempting to parse cleaned regex match:", cleanedMatch); // Log cleaned match
                 try {
                     parsed = JSON.parse(cleanedMatch);
                 } catch (fallbackParseError) {
-                    console.error("Fallback JSON parsing also failed:", fallbackParseError);
-                    console.error("Original text was:", text); // Log original for debugging
+                    Logger.error(Logger.Categories.VLM, "Fallback JSON parsing also failed:", fallbackParseError);
+                    Logger.error(Logger.Categories.VLM, "Original text was:", text); // Log original for debugging
                     throw new GeneralAPIError('No valid JSON found in Gemini response even after cleaning and regex fallback.');
                 }
             } else {
-                 console.error("No JSON object found via regex in original text:", text);
+                 Logger.error(Logger.Categories.VLM, "No JSON object found via regex in original text:", text);
                  throw new GeneralAPIError('No valid JSON found in Gemini response after cleaning and regex attempt.');
             }
         }
@@ -493,7 +492,7 @@ class GeminiAdapter implements VLMService {
 
         // Ensure parsed data is an object before proceeding
         if (typeof parsed !== 'object' || parsed === null) {
-            console.error("Parsed content is not a valid object:", parsed);
+            Logger.error(Logger.Categories.VLM, "Parsed content is not a valid object:", parsed);
             throw new GeneralAPIError('Parsed Gemini response is not a valid object.');
         }
 
@@ -502,7 +501,7 @@ class GeminiAdapter implements VLMService {
         if (!validation.valid) {
           // Check elements safely, provide default empty array if undefined
           if (validation.partial && (validation.partial.elements?.length ?? 0) > 0) {
-            console.warn('[Gemini] Partial diagram parsed with errors:', validation.errors);
+            Logger.warn(Logger.Categories.VLM, '[Gemini] Partial diagram parsed with errors:', validation.errors);
             // Construct the return object carefully to match VLMServiceResponse type
             return {
               analysis_summary: validation.partial.analysis_summary ?? { total_distinct_elements: 0, composition_interpretation: 'Partial parse error' }, // Provide default summary
@@ -530,7 +529,7 @@ class GeminiAdapter implements VLMService {
         // Only retry on transient errors
         if (err instanceof GeneralAPIError && err.message.includes('Transient Gemini API error')) {
           const delay = this.baseDelay * Math.pow(2, attempt);
-          console.warn(`[Gemini] Transient error, retrying in ${delay}ms...`, err);
+          Logger.warn(Logger.Categories.VLM, `[Gemini] Transient error, retrying in ${delay}ms...`, err);
           await new Promise(res => setTimeout(res, delay));
           continue;
         }
@@ -550,7 +549,7 @@ class GeminiAdapter implements VLMService {
     } else if (typeof lastError === 'string') {
       message = lastError;
     }
-    console.error('[Gemini] Final error:', lastError);
+    Logger.error(Logger.Categories.VLM, '[Gemini] Final error:', lastError);
     throw new GeneralAPIError(message);
   }
 }
@@ -733,53 +732,13 @@ class Gpt4oAdapter implements VLMService {
   }
 }
 
-/**
- * Factory function to select the appropriate VLMService implementation based on user preferences.
- *
- * To add support for new models, extend this function to check for additional API keys or settings.
- *
- * @param prefs User preferences (should include API keys for supported models)
- * @returns VLMService instance (GeminiAdapter, ClaudeAdapter, etc.)
- */
-function getVLMService(prefs: Preferences): VLMService {
-   if (prefs.geminiApiKey) {
-       return new GeminiAdapter(prefs.geminiApiKey);
-   }
-   if (prefs.claudeApiKey) {
-     return new ClaudeAdapter(prefs.claudeApiKey);
-   }
-   if (prefs.gpt4oApiKey) {
-     return new Gpt4oAdapter(prefs.gpt4oApiKey);
-   }
-   console.warn("No suitable VLM API key found in preferences. Using dummy service.");
-   return { analyzeImage: async () => ({ 
-     analysis_summary: { total_distinct_elements: 0, composition_interpretation: 'Dummy response' }, 
-     elements: [],
-     plausibility_check_notes: 'Dummy response',
-     vlmProvider: 'dummy' 
-   }) } 
-}
-
-/**
- * React hook to access the current VLMService based on user preferences.
- *
- * Usage: const vlmService = useVLMService();
- *
- * @returns VLMService instance
- */
-export function useVLMService(): VLMService {
-    const { preferences } = usePreferences();
-    // In a real app, you might memoize this based on preferences
-    return getVLMService(preferences);
-}
-
 // Expose cache for testing/inspection
 export { GEMINI_CACHE, hashImageData }; 
 
 // Dummy Adapter for fallback/testing
 class DummyVLMAdapter implements VLMService {
   public async analyzeImage(_dataUrl: string): Promise<VLMServiceResponse> {
-    console.warn(`[DummyVLM] Using dummy adapter for type: ${_dataUrl}. Returning mock data.`);
+    Logger.warn(Logger.Categories.VLM, `[DummyVLM] Using dummy adapter for type: ${_dataUrl}. Returning mock data.`);
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     // Return mock response matching VLMServiceResponse structure
     return {
@@ -791,14 +750,12 @@ class DummyVLMAdapter implements VLMService {
   }
 }
 
-// Simple service factory or hook modification needed here
-// For now, just exporting the interface and adapters
-// The actual useVLMService hook needs modification to select the adapter based on vlmType
-
-// Placeholder for a function that might select the adapter
-// This logic should ideally live within useVLMService or a factory
+/**
+ * Factory: returns the VLMService adapter for the given provider key.
+ * Unknown/unimplemented providers fall back to a dummy adapter.
+ */
 function getVlmAdapter(vlmType: string, apiKey: string = ''): VLMService {
-  console.log(`Selecting adapter for VLM type: ${vlmType}`);
+  Logger.debug(Logger.Categories.VLM, `Selecting adapter for VLM type: ${vlmType}`);
   switch (vlmType) {
     case 'gemini':
       return new GeminiAdapter(apiKey);
@@ -807,36 +764,11 @@ function getVlmAdapter(vlmType: string, apiKey: string = ''): VLMService {
     case 'gpt4o':
       return new Gpt4oAdapter(apiKey);
     default:
-      console.warn(`No adapter found for VLM type: ${vlmType}, using dummy adapter.`);
+      Logger.warn(Logger.Categories.VLM, `No adapter found for VLM type: ${vlmType}, using dummy adapter.`);
       return new DummyVLMAdapter();
   }
 }
 
-// Example usage (replace current useVLMService hook logic with something like this):
-/*
-export const useVLMService = (vlmType: string): VLMService => {
-  // In a real app, you might memoize this based on vlmType
-  return getVlmAdapter(vlmType);
-};
-*/
-
-// Keeping original export for now until hook is refactored
-// export const useVLMService = (): VLMService => {
-//   // Check environment variable or default to Gemini
-//   const defaultProvider = process.env.REACT_APP_VLM_PROVIDER || 'gemini';
-//   if (defaultProvider === 'dummy') {
-//     return new DummyVLMAdapter();
-//   }
-//   // Add logic for other providers if needed
-//   return new GeminiAdapter();
-// };
-
-// NOTE: The current useVLMService hook needs refactoring to accept
-// vlmType and return the correct adapter instance.
-// The code above provides the interface changes and a basic factory pattern.
-// The actual hook implementation is outside this edit.
-
-// Make factory usable by Home.tsx temporarily
-export { getVlmAdapter }; // Export the factory
+export { getVlmAdapter };
 
 export { GeminiAdapter }; // Also export adapter if needed directly

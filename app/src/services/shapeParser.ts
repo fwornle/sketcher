@@ -1,4 +1,4 @@
-import {
+import type {
   Shape,
   ShapeRelationship,
   ShapeType,
@@ -6,7 +6,7 @@ import {
   TextShape,
   ElementStyleProps
 } from './shapeModels';
-import { VLMServiceResponse, DiagramElement } from './vlmService';
+import type { VLMServiceResponse, DiagramElement } from './vlmService';
 
 // Helper function to generate unique relationship IDs
 let relIdCounter = 0;
