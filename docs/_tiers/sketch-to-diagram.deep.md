@@ -54,6 +54,8 @@ The **Diagram Preview** is a full draw.io editor embedded from `embed.diagrams.n
 Move, resize, restyle or add shapes there, or download the file and continue in
 draw.io desktop.
 
+![A real run with Claude Opus 5.5: the result and the diagram in the embedded draw.io editor](images/ui-diagram-preview.png){ .screenshot }
+
 For the sample sketch on the [home page](index.md), the downloaded file opens as:
 
 ![The generated diagram opened in draw.io](images/diagram-sample-house.png)

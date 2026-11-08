@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 
 {#
-  Shortcut icon buttons in the header, next to the theme toggle and search.
-  The list is `extra.shortcuts` in mkdocs.yml:
+  Presentation decks as icon buttons in the header, next to the theme toggle and
+  search. The list is `extra.decks` in mkdocs.yml:
     - title: shown as the tooltip and the accessible name
-      link:  the built page URL, relative to the site root
-             (e.g. architecture/ — not architecture.md: `url` does not map .md files)
-      icon:  a bundled Material icon path, e.g. material/sitemap-outline
-  assets/header-shortcuts.js moves the rendered links into the header bar.
+      link:  the deck's built page URL, relative to the site root
+             (e.g. overview/ — not overview.md: `url` does not map .md files)
+      icon:  a bundled Material icon path, e.g. material/presentation
+  assets/header-decks.js moves the rendered links into the header bar.
   Extending the block (rather than overriding the header partial) keeps this
   working across Material releases.
 #}
 {% block header %}
   {{ super() }}
-  {% if config.extra.shortcuts %}
-    <template id="header-shortcuts">
-      {% for item in config.extra.shortcuts %}
-        <a href="{{ item.link | url }}" class="md-header__button md-icon header-shortcut" title="{{ item.title }}" aria-label="{{ item.title }}">
+  {% if config.extra.decks %}
+    <template id="header-decks">
+      {% for item in config.extra.decks %}
+        <a href="{{ item.link | url }}" class="md-header__button md-icon header-deck" title="{{ item.title }}" aria-label="{{ item.title }}">
           {% include ".icons/" ~ item.icon ~ ".svg" %}
         </a>
       {% endfor %}

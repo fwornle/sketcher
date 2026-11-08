@@ -1,8 +1,8 @@
 (() => {
   if (typeof document === 'undefined') return;
-  const template = document.getElementById('header-shortcuts');
+  const template = document.getElementById('header-decks');
   const header = document.querySelector('.md-header__inner');
-  if (!template || !header || header.querySelector('.header-shortcut')) return;
+  if (!template || !header || header.querySelector('.header-deck')) return;
   // Ahead of the palette toggle, or of search when there is no toggle.
   const anchor = header.querySelector('.md-header__option, label[for="__search"], .md-header__source');
   const links = template.content.cloneNode(true);

@@ -8,15 +8,17 @@ edit_uri: edit/main/docs/
 docs_dir: docs
 
 extra_css:
+  - assets/overview.css
   - assets/extra.css
 extra_javascript:
   # The right-hand contents list follows the open tier tab (Quick / Deep Dive).
   - assets/tabbed-toc.js
-  - assets/header-shortcuts.js
+  - assets/overview.js
+  - assets/header-decks.js
 
 theme:
   name: material
-  # Header shortcut buttons (extra.shortcuts below).
+  # Header deck buttons (extra.decks below).
   custom_dir: overrides
   icon:
     logo: material/draw-pen
@@ -84,6 +86,11 @@ exclude_docs: |
 validation:
   anchors: warn
 
+# The presentation decks are reached from the header icons, not the navigation.
+not_in_nav: |
+  /overview.md
+  /how-it-works.md
+
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
@@ -99,16 +106,13 @@ nav:
     - Troubleshooting: troubleshooting.md
 
 extra:
-  # Quick links, rendered as icon buttons in the header (overrides/main.html).
-  shortcuts:
-    - title: Getting started
-      link: getting-started/
-      icon: material/rocket-launch-outline
-    - title: Sketch to diagram, step by step
-      link: sketch-to-diagram/
-      icon: material/draw
-    - title: Architecture
-      link: architecture/
+  # Presentations, opened from icon buttons in the header (overrides/main.html).
+  decks:
+    - title: "Sketcher overview: what it does and what it can do"
+      link: overview/
+      icon: material/presentation
+    - title: "How it works: from photo to diagram"
+      link: how-it-works/
       icon: material/sitemap-outline
   social:
     - icon: fontawesome/brands/github
