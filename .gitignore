@@ -59,3 +59,7 @@ logs/
 # MkDocs build output and local virtualenv
 site/
 .venv/
+
+# sketcher release packaging: the copied web app and packed tarballs
+cli/dist/
+release/

@@ -9,6 +9,7 @@
     "build": "npm run build --prefix app",
     "preview": "npm run preview --prefix app",
     "test": "npm run test --prefix app",
+    "release:pack": "node scripts/pack-release.mjs",
     "tasks": "task-master",
     "tasks:list": "task-master list",
     "tasks:generate": "task-master generate",

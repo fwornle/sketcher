@@ -1,0 +1,25 @@
+{
+  "name": "sketcher",
+  "version": "0.1.0",
+  "description": "Turn whiteboard sketches into draw.io diagrams: installs the Sketcher web app and the sketcher command that serves it locally",
+  "type": "module",
+  "bin": {
+    "sketcher": "bin/sketcher.mjs"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fwornle/sketcher.git"
+  },
+  "homepage": "https://fwornle.github.io/sketcher/",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}

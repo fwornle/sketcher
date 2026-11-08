@@ -1,0 +1,39 @@
+# Releases: pushing a tag v<x.y.z> builds the web app, packs it with the sketcher CLI into
+# sketcher-<x.y.z>.tgz and publishes it as a GitHub release asset. `sketcher update` and the
+# getting-started instructions download that asset with `gh release download`.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      # The tag is the version: stamp it into the app (bottom bar) and the CLI, no commit.
+      - run: |
+          VERSION="${TAG#v}"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version --prefix app
+          npm version "$VERSION" --no-git-tag-version --allow-same-version --prefix cli
+      - run: npm ci --prefix app
+      - run: npm test --prefix app
+      - run: npm test --prefix cli
+      - run: node scripts/pack-release.mjs
+      - run: gh release create "$TAG" "release/sketcher-${TAG#v}.tgz" --title "$TAG" --generate-notes

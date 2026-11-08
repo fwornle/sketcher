@@ -8,18 +8,32 @@ A React application that uses Vision-Language Models (VLM/LLM) to analyze whiteb
 
 ## Quick Start
 
-After cloning the repository:
+Install the `sketcher` command from the latest release (needs Node.js 20.19+ and the
+GitHub CLI, logged in with `gh auth login`):
 
 ```bash
-# Install dependencies
-npm install
-npm install --prefix app
-
-# Start the development server
-npm run dev
+gh release download --repo fwornle/sketcher --pattern 'sketcher-*.tgz'
+npm install -g ./sketcher-*.tgz
+sketcher doctor   # check the setup
+sketcher          # start in the background and open http://localhost:5180
 ```
 
-Open http://localhost:5173 in your browser.
+`sketcher stop`, `sketcher status`, `sketcher update` and `sketcher uninstall` do what
+they say; see [Getting Started](https://fwornle.github.io/sketcher/getting-started/) for
+details.
+
+## Develop
+
+To work on the app itself, run it from source:
+
+```bash
+npm install
+npm install --prefix app
+npm run dev        # Vite dev server at http://localhost:5173
+```
+
+API keys live in the browser per address, so the dev server (5173) and the installed app
+(5180) keep separate settings.
 
 ## Available Scripts
 
@@ -29,9 +43,13 @@ Open http://localhost:5173 in your browser.
 | `npm run build` | Build the app for production |
 | `npm run preview` | Preview the production build |
 | `npm run test` | Run tests |
+| `npm run release:pack` | Build the app and pack it with the CLI into `release/sketcher-<version>.tgz` |
 | `npm run tasks:list` | List task-master tasks |
 | `npm run tasks:generate` | Generate task files |
 | `npm run tasks:parse-prd` | Parse PRD documents |
+
+Releases: push a tag `v<x.y.z>`; the `release` workflow packs the tarball and publishes it
+as a GitHub release asset, which `sketcher update` installs.
 
 ## Project Structure
 
@@ -57,6 +75,10 @@ app/src/
 ├── services/               # VLM adapters, shape parser, drawio converter, storage
 └── utils/logging/          # Categorised console Logger (VLM, PARSER, DIAGRAM, UI, ...)
 ```
+
+The `sketcher` command lives in `cli/` (`bin/sketcher.mjs`, with the static server, state
+and release helpers in `lib/`); `scripts/pack-release.mjs` copies the built app into it
+and packs the release tarball.
 
 ## Tech Stack
 

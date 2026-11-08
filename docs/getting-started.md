@@ -1,21 +1,24 @@
 # Getting Started
 
-Clone, install, start the dev server and add one API key.
+Install the `sketcher` command, start it and add one API key.
 
 === "⚡ Quick (~3 min)"
 
-    ## Run it in four commands
+    ## Install and start in four commands
 
-    Needs Node.js 20 or newer.
+    Needs Node.js 20.19 or newer and the GitHub CLI (`gh`), logged in once with
+    `gh auth login`.
 
     ```sh
-    git clone https://github.com/fwornle/sketcher.git && cd sketcher
-    npm install
-    npm install --prefix app
-    npm run dev
+    gh release download --repo fwornle/sketcher --pattern 'sketcher-*.tgz'
+    npm install -g ./sketcher-*.tgz
+    sketcher doctor
+    sketcher
     ```
 
-    Open <http://localhost:5173>.
+    `sketcher` starts a small local server in the background and opens
+    <http://localhost:5180>. Run it again any time to reopen the app; `sketcher stop` stops
+    the server and `sketcher update` installs a newer release.
 
     ![Sketcher home page](images/ui-home.png){ .screenshot }
 
