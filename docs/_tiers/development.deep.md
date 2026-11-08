@@ -30,6 +30,18 @@ The suite covers the model-independent core in `app/src/services/`:
 
 Tests run in `jsdom`; network calls are mocked, so no API key is needed.
 
+## Dependency overrides
+
+`app/package.json` has one npm `overrides` entry: it makes
+`@typescript-eslint/typescript-estree` use `minimatch` 11 instead of 10, which clears
+advisory [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)
+(fixed only in `minimatch` ≥ 11.0.1). `typescript-eslint` 8.72 still declares
+`minimatch ^10.2.2`.
+
+**Remove the override** once a `typescript-eslint` release depends on `minimatch` 11 or
+later (check with `npm view @typescript-eslint/typescript-estree dependencies.minimatch`).
+Left in place after that, it could hold the dependency back.
+
 ## Add a vision model
 
 1. **Write an adapter** in `app/src/services/vlmService.ts` that implements `VLMService`:
