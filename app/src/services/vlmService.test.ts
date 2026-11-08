@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GEMINI_CACHE, validateStructuredDiagram } from './vlmService';
+import { GEMINI_CACHE, parseImageDataUrl, validateStructuredDiagram } from './vlmService';
 
 // Mock GeminiAdapter and dependencies
 import type { VLMService, VLMServiceResponse } from './vlmService';
@@ -86,3 +86,18 @@ describe('VLMService Integration', () => {
 
   // TODO: Add tests for real GeminiAdapter with API key (integration), error cases, and cache eviction
 }); 
+
+describe('parseImageDataUrl', () => {
+  it('returns the media type and payload of a PNG data URL', () => {
+    expect(parseImageDataUrl('data:image/png;base64,iVBORw0KGgo=')).toEqual({ mediaType: 'image/png', data: 'iVBORw0KGgo=' });
+  });
+
+  it('accepts JPEG, which the upload area allows', () => {
+    expect(parseImageDataUrl('data:image/jpeg;base64,/9j/4AAQ')).toEqual({ mediaType: 'image/jpeg', data: '/9j/4AAQ' });
+  });
+
+  it('rejects formats the models are not sent', () => {
+    expect(() => parseImageDataUrl('data:image/gif;base64,R0lGOD')).toThrow('Only PNG and JPEG images are supported.');
+    expect(() => parseImageDataUrl('not a data url')).toThrow('Only PNG and JPEG images are supported.');
+  });
+});

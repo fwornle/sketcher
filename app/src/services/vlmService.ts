@@ -333,6 +333,20 @@ export function validateStructuredDiagram(obj: unknown): { valid: boolean, error
   return { valid, errors, partial };
 }
 
+export type ImageMediaType = 'image/png' | 'image/jpeg';
+
+/**
+ * Splits an uploaded image's data URL into its media type and base64 payload, so each
+ * adapter declares the real format instead of assuming PNG.
+ */
+export function parseImageDataUrl(dataUrl: string): { mediaType: ImageMediaType; data: string } {
+  const match = /^data:(image\/(?:png|jpeg));base64,/.exec(dataUrl);
+  if (!match) {
+    throw new GeneralAPIError('Only PNG and JPEG images are supported.');
+  }
+  return { mediaType: match[1] as ImageMediaType, data: dataUrl.slice(match[0].length) };
+}
+
 /**
  * Utility to hash image data for cache key (SHA-256, base64).
  * Uses browser SubtleCrypto API.
@@ -396,13 +410,13 @@ class GeminiAdapter implements VLMService {
       return cached;
     }
     const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-4-argon:generateContent?key=' + (apiKey || this.apiKey);
-    const base64 = imageDataUrl.split(',')[1];
+    const { mediaType, data: base64 } = parseImageDataUrl(imageDataUrl);
     const prompt = buildGeminiPrompt('v1');
     const requestBody = {
       contents: [
         {
           parts: [
-            { inlineData: { mimeType: 'image/png', data: base64 } },
+            { inlineData: { mimeType: mediaType, data: base64 } },
             { text: prompt }
           ]
         }
@@ -566,16 +580,8 @@ class ClaudeAdapter implements VLMService {
     this.apiKey = apiKey;
   }
 
-  // Helper to extract base64 PNG bytes from a data URL
-  private dataUrlToBase64Png(dataUrl: string): string {
-    if (!dataUrl.startsWith('data:image/png;base64,')) {
-      throw new Error('Only PNG images are supported for Claude Vision');
-    }
-    return dataUrl.replace(/^data:image\/png;base64,/, '');
-  }
-
   async analyzeImage(imageDataUrl: string, apiKey?: string): Promise<VLMServiceResponse> {
-    const imageBase64 = this.dataUrlToBase64Png(imageDataUrl);
+    const { mediaType, data: imageBase64 } = parseImageDataUrl(imageDataUrl);
     const prompt = buildGeminiPrompt('v1'); // Use the same prompt for consistency
     const anthropic = new Anthropic({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
     let lastError: unknown = null;
@@ -595,7 +601,7 @@ class ClaudeAdapter implements VLMService {
                   type: 'image',
                   source: {
                     type: 'base64',
-                    media_type: 'image/png',
+                    media_type: mediaType,
                     data: imageBase64,
                   },
                 },
@@ -669,17 +675,10 @@ class Gpt4oAdapter implements VLMService {
     this.apiKey = apiKey;
   }
 
-  // Helper to extract base64 PNG bytes from a data URL
-  private dataUrlToBase64Png(dataUrl: string): string {
-    if (!dataUrl.startsWith('data:image/png;base64,')) {
-      throw new Error('Only PNG images are supported for OpenAI vision');
-    }
-    return dataUrl.replace(/^data:image\/png;base64,/, '');
-  }
-
   async analyzeImage(imageDataUrl: string, apiKey?: string): Promise<VLMServiceResponse> {
     const openai = new OpenAI({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
-    const imageBase64 = this.dataUrlToBase64Png(imageDataUrl);
+    // Validates the format; the data URL itself is what OpenAI takes
+    parseImageDataUrl(imageDataUrl);
     const prompt = buildGeminiPrompt('v1'); // Use the same prompt for consistency
     let lastError: unknown = null;
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
@@ -696,7 +695,7 @@ class Gpt4oAdapter implements VLMService {
                 {
                   type: 'image_url',
                   image_url: {
-                    url: `data:image/png;base64,${imageBase64}`,
+                    url: imageDataUrl,
                   },
                 },
                 { type: 'text', text: prompt },
