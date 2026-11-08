@@ -132,6 +132,10 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
       case 'line_segment':
         mappedType = 'line';
         break;
+      // The prompt lets the model report a shape it cannot classify; draw it rather than drop it
+      case 'other_shape':
+        mappedType = 'rectangle';
+        break;
     }
 
     // Use the mapped type. If it's not a valid ShapeType, the switch will skip it.

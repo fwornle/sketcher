@@ -16,7 +16,9 @@ interface DrawioViewerProps {
 }
 
 const DRAWIO_ORIGIN = 'https://embed.diagrams.net';
-const DRAWIO_EMBED_URL = `${DRAWIO_ORIGIN}/?embed=1&ui=min`;
+// stealth=1: the editor makes no calls to external services. Sketcher uses none of them, and it
+// stops the embed fetching embed.diagrams.net/notifications, which 404s there.
+const DRAWIO_EMBED_URL = `${DRAWIO_ORIGIN}/?embed=1&ui=min&stealth=1`;
 
 export const DrawioViewer: React.FC<DrawioViewerProps> = ({ xml, className }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);

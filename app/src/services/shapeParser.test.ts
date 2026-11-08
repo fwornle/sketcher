@@ -52,16 +52,17 @@ describe('parseShapesFromVLMResponse', () => {
     expect(relationships.filter(r => r.type === 'above')).toEqual([]);
   });
 
-  it('maps type aliases (square, line_segment) to internal shape types', () => {
+  it('maps type aliases (square, line_segment, other_shape) to internal shape types', () => {
     const { shapes, errors } = parseShapesFromVLMResponse({
       analysis_summary: summary,
       elements: [
         el({ id: '1', type: 'square' as DiagramElement['type'] }),
         el({ id: '2', type: 'line_segment' as DiagramElement['type'], bounding_box: { x1: 0, y1: 50, x2: 100, y2: 50 } }),
+        el({ id: '3', type: 'other_shape' as DiagramElement['type'] }),
       ],
     });
     expect(errors).toEqual([]);
-    expect(shapes.map(s => s.type)).toEqual(['rectangle', 'line']);
+    expect(shapes.map(s => s.type)).toEqual(['rectangle', 'line', 'rectangle']);
   });
 
   it('replaces VLM-reported "above" relationships with ones derived from geometry', () => {
@@ -100,7 +101,7 @@ describe('parseShapesFromVLMResponse', () => {
       elements: [
         { id: '1', type: 'rectangle' },                                                  // missing bounding_box -> default box
         el({ id: '2', type: 'text' }),                                                   // missing text_content -> empty label
-        el({ id: '3', type: 'other_shape' as DiagramElement['type'] }),                  // unsupported type -> skipped
+        el({ id: '3', type: 'blob' as DiagramElement['type'] }),                         // unsupported type -> skipped
         el({ id: '4', type: 'circle', relationships: [
           { related_element_id: 1, relation_type: 'telepathically_linked' },              // unknown relation -> silently ignored
           { related_element_id: 'x', relation_type: 'contains' } as unknown as { related_element_id: number; relation_type: string }, // invalid -> error
@@ -118,7 +119,7 @@ describe('parseShapesFromVLMResponse', () => {
 
     expect(errors).toEqual(expect.arrayContaining([
       expect.stringContaining('analysis_summary'),
-      expect.stringContaining("unhandled type 'other_shape'"),
+      expect.stringContaining("unhandled type 'blob'"),
       expect.stringContaining('Invalid nested relationship found for element ID 4'),
     ]));
     expect(errors).toHaveLength(3);
