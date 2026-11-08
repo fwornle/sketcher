@@ -141,7 +141,39 @@ describe('generateDrawioXml', () => {
     ];
     const xml = generateDrawioXml(shapes, [], PAGE);
     expect(xml.indexOf('id="el-box"')).toBeLessThan(xml.indexOf('id="el-tri"'));
-    expect(cell(xml, 'el-tri')).toContain('rotation=-90'); // default: apex points up
+    // Apex up without rotating the box, so tall triangles keep their proportions
+    expect(cell(xml, 'el-tri')).toContain('direction=north');
+    expect(cell(xml, 'el-tri')).not.toContain('rotation');
+  });
+
+  it('draws a polyline through its points, curved when densely sampled', () => {
+    const points = [{ x: 0, y: 0 }, { x: 10, y: 20 }, { x: 30, y: 25 }, { x: 50, y: 40 }, { x: 60, y: 80 }];
+    const shapes: Shape[] = [{ id: 'road', type: 'polyline', boundingBox: { x: 0, y: 0, width: 60, height: 80 }, points }];
+    const road = cell(generateDrawioXml(shapes, [], PAGE), 'el-road');
+    expect(road).toContain('edge="1"');
+    expect(road).toContain('curved=1');
+    expect(road).toContain(`<mxPoint x="${MARGIN}" y="${MARGIN}" as="sourcePoint"/>`);
+    expect(road).toContain(`<mxPoint x="${60 + MARGIN}" y="${80 + MARGIN}" as="targetPoint"/>`);
+    expect((road.match(/<mxPoint /g) ?? []).length).toBe(5); // two ends and three waypoints
+  });
+
+  it('closes a polygon back onto its first point, with straight sides', () => {
+    const points = [{ x: 50, y: 0 }, { x: 100, y: 80 }, { x: 0, y: 80 }];
+    const shapes: Shape[] = [{ id: 'tree', type: 'polygon', boundingBox: { x: 0, y: 0, width: 100, height: 80 }, points }];
+    const tree = cell(generateDrawioXml(shapes, [], PAGE), 'el-tree');
+    expect(tree).toContain(`<mxPoint x="${50 + MARGIN}" y="${MARGIN}" as="sourcePoint"/>`);
+    expect(tree).toContain(`<mxPoint x="${50 + MARGIN}" y="${MARGIN}" as="targetPoint"/>`);
+    expect(tree).toContain('rounded=0');
+    expect(tree).not.toContain('curved=1');
+  });
+
+  it('draws an arrow from its first to its last point, whatever the direction', () => {
+    const points = [{ x: 100, y: 0 }, { x: 0, y: 100 }]; // up-right to down-left
+    const shapes: Shape[] = [{ id: 'a', type: 'arrow', boundingBox: { x: 0, y: 0, width: 100, height: 100 }, points }];
+    const arrow = cell(generateDrawioXml(shapes, [], PAGE), 'el-a');
+    expect(arrow).toContain('endArrow=classic');
+    expect(arrow).toContain(`<mxPoint x="${100 + MARGIN}" y="${MARGIN}" as="sourcePoint"/>`);
+    expect(arrow).toContain(`<mxPoint x="${MARGIN}" y="${100 + MARGIN}" as="targetPoint"/>`);
   });
 });
 

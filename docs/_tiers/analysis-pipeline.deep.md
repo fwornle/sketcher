@@ -18,10 +18,20 @@ The thunk reads the selected model and its key from `preferences`, gets the matc
 adapter from `getVlmAdapter()`, and calls `analyzeImage()`.
 
 The prompt asks for one JSON object and spells out the schema: element types, pixel
-bounding boxes (`x1, y1, x2, y2`, origin top-left), dimensions, orientation, line style,
-colour, fill, text and spatial relationships. It tells the model to cross-check its own
-boxes against the relationships it reports and to write the result of that check into
-`plausibility_check_notes`. The full prompt is in `app/src/services/vlmService.ts`.
+bounding boxes (`x1, y1, x2, y2`, origin top-left), stroke points, dimensions,
+orientation, line style, colour, fill, text and spatial relationships. It is written for
+any sketch, not one subject:
+
+- A primitive type is used only when the stroke really is that primitive; nothing is
+  approximated by its bounding rectangle.
+- Drawn objects are described by their parts (a pine tree as stacked triangles and a
+  trunk, a stick figure as a circle and lines).
+- Curved and freehand strokes are `polyline`s and irregular closed outlines `polygon`s,
+  each with its vertices in `points`; lines and arrows give their start and end there.
+
+The model checks its own output (points inside boxes, "above" meaning a smaller y, the
+element count) and writes what it checked into `plausibility_check_notes`. The full prompt
+is in `app/src/services/vlmService.ts`.
 
 The same format is also sent as a JSON schema, which each provider enforces (structured
 outputs), so the answer is always parseable JSON; see
@@ -45,7 +55,10 @@ result rather than thrown away.
 `parseShapesFromVLMResponse()` turns each element into a typed `Shape`:
 
 - **Types are normalised.** `square` becomes `rectangle`, `line_segment` becomes `line`,
-  unknown types are skipped with a warning.
+  `other_shape` becomes `rectangle`; a `polyline` with fewer than two points becomes a
+  `line` and a `polygon` with fewer than three a `rectangle`. Unknown types are skipped
+  with a warning.
+- **Points are kept** for polylines, polygons, lines and arrows.
 - **Boxes become position and size.** Text shapes get a minimum size derived from their
   character count so labels do not wrap into unreadable columns.
 - **Styles are mapped.** `line_style`, `color`, `fill` and `line_thickness` become draw.io
@@ -62,12 +75,16 @@ Anything skipped is collected in `errors` and shown as warnings in the result pa
 
 1. Computes one scale factor that fits the original image into an 850 × 1100 page while
    keeping its aspect ratio, inside a 50 px margin.
-2. Emits non-triangle shapes first and triangles last, so roofs and arrow heads are drawn
-   on top.
+2. Emits shapes largest first, so smaller ones lie on top, and triangles last, so roofs
+   and arrow heads are drawn on top.
 3. Maps each type to a draw.io style (`shape=trapezoid;perimeter=trapezoidPerimeter`,
-   `shape=rhombus`, `endArrow=classic` for arrows, `endArrow=none` for lines, …) and adds
-   stroke colour, dash pattern and fill.
-4. Wraps the cells in an `mxfile` document.
+   `shape=rhombus`, `shape=triangle;direction=north`, …) and adds stroke colour, dash
+   pattern and fill. Triangles point up through `direction=north`, which keeps their box,
+   rather than a rotation, which would squash tall ones.
+4. Draws lines, arrows, polylines and polygons as unconnected edges: the first and last
+   points are the ends, the others waypoints. Densely sampled polylines are drawn
+   `curved=1`; polygons end on their first point.
+5. Wraps the cells in an `mxfile` document.
 
 Relationships are passed in but not drawn yet; connectors between shapes are a planned
 extension.

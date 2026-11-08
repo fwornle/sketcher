@@ -111,6 +111,9 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
     }
 
     const text = el.text_content ?? undefined;
+    const points = Array.isArray(el.points)
+      ? el.points.filter(pt => pt && typeof pt.x === 'number' && typeof pt.y === 'number').map(pt => ({ x: pt.x, y: pt.y }))
+      : [];
     // Extract orientation_angle (keep old orientation undefined for now)
     const orientation_angle = typeof el.orientation_angle === 'number' ? el.orientation_angle : undefined;
     const orientation = undefined;
@@ -137,6 +140,9 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
         mappedType = 'rectangle';
         break;
     }
+    // A path needs its vertices: without them fall back to what the bounding box can still show
+    if (mappedType === 'polyline' && points.length < 2) mappedType = 'line';
+    if (mappedType === 'polygon' && points.length < 3) mappedType = 'rectangle';
 
     // Use the mapped type. If it's not a valid ShapeType, the switch will skip it.
     const internalType = mappedType as ShapeType;
@@ -147,7 +153,7 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
     const MIN_ARROW_HEAD = 10; // Minimum width for arrow head
     
     // Adjust bounding box based on shape type
-    if (internalType === 'line' || internalType === 'arrow') {
+    if ((internalType === 'line' || internalType === 'arrow') && points.length < 2) {
       // Calculate the original center point
       const centerX = finalBoundingBox.x + finalBoundingBox.width / 2;
       const centerY = finalBoundingBox.y + finalBoundingBox.height / 2;
@@ -217,6 +223,10 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
       case 'line':
         shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, orientation, role, orientation_angle };
         break;
+      case 'polyline':
+      case 'polygon':
+        shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, orientation, role, orientation_angle };
+        break;
       case 'parallelogram':
         shape = { id: finalId, type: internalType, boundingBox: finalBoundingBox, style, text, orientation, role, orientation_angle };
         break;
@@ -235,6 +245,10 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
         }
         break;
       // Default case: if internalType is not one of the above, shape remains null
+    }
+
+    if (shape && points.length >= 2 && ['line', 'arrow', 'polyline', 'polygon'].includes(shape.type)) {
+      shape.points = points;
     }
 
     // Only push the shape if it was successfully created

@@ -117,7 +117,8 @@ model to it, so the answer always parses:
 - **Validate**: an answer without elements fails; a single bad element is repaired
   or skipped, never the whole result.
 - **Normalise types**: `square` becomes a rectangle, `line_segment` a line,
-  `other_shape` a rectangle.
+  `other_shape` a rectangle; a polyline or polygon without enough points falls back to a
+  line or rectangle.
 - **Map styles**: colour names become hex colours draw.io can draw; dashed and dotted
   lines carry over.
 - **Flatten relationships**: "left of", "inside", "points to" become one list.
@@ -144,7 +145,8 @@ Anything skipped is listed as a warning in the result panel.
 - One scale factor fits the photo onto an **850 × 1100** draw.io page, keeping its
   proportions, inside a 50 px margin.
 - Triangles are drawn **last**, so roofs and arrow heads stay on top.
-- Each type gets its draw.io style; arrows and lines become edges.
+- Each type gets its draw.io style; arrows, lines, polylines and polygons become edges
+  through their points.
 - The embedded editor signals *ready*; Sketcher then posts the XML to it.
 
 </div>
@@ -178,7 +180,7 @@ implemented. Parser, converter and editor need no change.
 </div>
 <figure class="overview-figure" markdown="1">
 
-[![Logging configuration](images/ui-logging-control.png)](images/ui-logging-control.png){: target="_blank" rel="noopener" title="Open full-size screenshot" }
+[![Settings, Logging tab](images/ui-logging-control.png)](images/ui-logging-control.png){: target="_blank" rel="noopener" title="Open full-size screenshot" }
 
 <figcaption>Per-category logs (VLM, PARSER, DIAGRAM, …) show each stage at work.</figcaption>
 </figure>

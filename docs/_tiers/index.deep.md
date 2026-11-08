@@ -16,8 +16,13 @@ then generates draw.io shapes at the same relative positions and sizes.
 | Triangle | `triangle` (drawn on top, so roofs and arrows heads stay visible) |
 | Trapezoid, parallelogram, rhombus / diamond | the matching draw.io shape |
 | Hexagon, octagon | the matching draw.io shape |
-| Arrow, line segment | an edge, with or without an arrow head |
+| Arrow, line segment | an edge, with or without an arrow head, from start to end point |
+| Polyline: a curved or freehand stroke | an edge through the stroke's points, smoothed when densely sampled |
+| Polygon: an irregular closed outline | a closed edge along its corners |
 | Text | a text cell with the recognised words |
+
+Drawn objects such as trees, people or houses come out as the parts they are made of: a
+pine tree as stacked triangles and a trunk, a stick figure as a circle and lines.
 
 Line colour, line style (solid, dashed, dotted) and fill are carried over when the model
 reports them.
@@ -27,8 +32,8 @@ reports them.
 - **Connectors between shapes.** The model reports relationships ("above", "inside",
   "points to"), and Sketcher parses them, but the draw.io output does not draw them as
   connectors yet. Arrows that are drawn on the board do become edges.
-- **SVG or PNG export.** Settings lets you pick an export format, but the download button
-  writes `.drawio` today. Open that file in draw.io to export SVG or PNG.
+- **SVG or PNG export.** The download button writes `.drawio`. Open that file in draw.io
+  to export SVG or PNG.
 - **Local models.** Qwen2.5-VL, Florence-2, CogVLM and LLaVA are listed in the model
   picker as *not yet supported*; selecting one returns an empty result.
 

@@ -63,6 +63,36 @@ export function generateDrawioXml(
   // Z-ordering: larger shapes first, so smaller ones lie on top of them and stay visible and
   // selectable; triangles after everything else so roofs and arrow heads stay on top
   const area = (s: Shape) => s.boundingBox.width * s.boundingBox.height;
+  const toCanvas = (p: { x: number; y: number }) => ({ x: p.x * scale + CANVAS_MARGIN, y: p.y * scale + CANVAS_MARGIN });
+
+  /**
+   * A stroke through the given image-space points as an unconnected drawio edge: the first
+   * and last points are its ends, the rest its waypoints. Closed strokes end where they began.
+   */
+  const pathEdge = (element: Shape, points: Array<{ x: number; y: number }>, { closed = false, arrow = false } = {}) => {
+    const canvasPoints = points.map(toCanvas);
+    const source = canvasPoints[0];
+    const target = closed ? canvasPoints[0] : canvasPoints[canvasPoints.length - 1];
+    const waypoints = closed ? canvasPoints.slice(1) : canvasPoints.slice(1, -1);
+    // Densely sampled strokes are freehand curves; a few points are straight runs with corners
+    const curved = !closed && points.length > 4;
+    let style = `endArrow=${arrow ? 'classic' : 'none'};html=1;strokeWidth=2;${curved ? 'curved=1;' : 'rounded=0;'}`;
+    if (element.style?.color) style += `strokeColor=${element.style.color};`;
+    if (element.style?.lineStyle && element.style.lineStyle !== 'solid') {
+      style += 'dashed=1;';
+      if (element.style.lineStyle === 'dotted') style += 'dashPattern=1 4;';
+    }
+    const waypointXml = waypoints.length
+      ? `<Array as="points">${waypoints.map(p => `<mxPoint x="${p.x}" y="${p.y}"/>`).join('')}</Array>`
+      : '';
+    return `<mxCell id="el-${element.id}" value="" style="${style}" edge="1" parent="1">
+              <mxGeometry relative="1" as="geometry">
+                <mxPoint x="${source.x}" y="${source.y}" as="sourcePoint"/>
+                <mxPoint x="${target.x}" y="${target.y}" as="targetPoint"/>
+                ${waypointXml}
+              </mxGeometry>
+            </mxCell>`;
+  };
   const byAreaDescending = (a: Shape, b: Shape) => area(b) - area(a);
   const nonTriangles = shapes.filter(s => s.type !== 'triangle').sort(byAreaDescending);
   const triangles = shapes.filter(s => s.type === 'triangle').sort(byAreaDescending);
@@ -126,7 +156,12 @@ export function generateDrawioXml(
             // Reduce vertical spacing slightly
             styleString += 'spacing=3;spacingTop=1;spacingBottom=1;';
             break;
+        case 'polyline':
+            return pathEdge(element, element.points ?? []);
+        case 'polygon':
+            return pathEdge(element, element.points ?? [], { closed: true });
         case 'line':
+            if (element.points && element.points.length >= 2) return pathEdge(element, element.points);
             // Create edge instead of vertex
             return `<mxCell id="${drawioId}" value="" style="endArrow=none;html=1;strokeWidth=2;${
               element.style?.color ? `strokeColor=${element.style.color};` : ''
@@ -137,6 +172,7 @@ export function generateDrawioXml(
               </mxGeometry>
             </mxCell>`;
         case 'arrow':
+            if (element.points && element.points.length >= 2) return pathEdge(element, element.points, { arrow: true });
             // Create edge with arrow
             return `<mxCell id="${drawioId}" value="" style="endArrow=classic;html=1;strokeWidth=2;${
               element.style?.color ? `strokeColor=${element.style.color};` : ''
@@ -189,11 +225,11 @@ export function generateDrawioXml(
     }
     */
     // Apply rotation if angle is significant (Drawio rotation is clockwise, angle is counter-clockwise)
+    // drawio's triangle points right; direction=north points it up within the same box (a -90
+    // rotation would turn the box and squash tall triangles). Angles are relative to pointing up.
+    if (element.type === 'triangle') styleString += 'direction=north;';
     if (typeof element.orientation_angle === 'number' && Math.abs(element.orientation_angle) > 1) { // Threshold to avoid tiny rotations
       styleString += `rotation=${-element.orientation_angle};`;
-    } else if (element.type === 'triangle' && (element.orientation_angle === undefined || Math.abs(element.orientation_angle) <= 1)) {
-      // Default triangle rotation to point upwards if angle is 0 or not provided
-      styleString += `rotation=-90;`;
     }
 
     const label = escapeXml(element.type === 'text' ? (element as TextShape).text || '' : '');
@@ -232,11 +268,9 @@ export function generateDrawioXml(
     if (typeof element.style?.opacity === 'number') styleString += `opacity=${Math.round(element.style.opacity * 100)};`;
 
     // Apply rotation
+    if (element.type === 'triangle') styleString += 'direction=north;';
     if (typeof element.orientation_angle === 'number' && Math.abs(element.orientation_angle) > 1) {
       styleString += `rotation=${-element.orientation_angle};`;
-    } else if (element.type === 'triangle' && (element.orientation_angle === undefined || Math.abs(element.orientation_angle) <= 1)) {
-      // Default triangle rotation to point upwards
-      styleString += `rotation=-90;`;
     }
 
     const label = escapeXml(''); // Triangles from VLM unlikely to have labels directly

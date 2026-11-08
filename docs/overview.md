@@ -87,7 +87,10 @@ Drop another photo to replace it, or **Reset** to start over.
 | Rectangles, squares | rectangles |
 | Circles, ellipses | ellipses |
 | Triangles, trapezoids, parallelograms, rhombi | the matching draw.io shape |
-| Arrows and lines | edges, with or without a head |
+| Arrows and lines | edges, with or without a head, in the drawn direction |
+| Curved and freehand strokes (roads, rivers, squiggles) | smooth paths through the stroke |
+| Irregular closed outlines (clouds, stars, blobs) | closed paths along the outline |
+| Pictograms (trees, people, houses) | the parts they are drawn from |
 | Text | text labels |
 | A shape the model cannot classify | a rectangle, so nothing goes missing |
 
@@ -197,9 +200,9 @@ Florence-2, CogVLM and LLaVA are listed for later.
 </div>
 <figure class="overview-figure" markdown="1">
 
-[![Settings, General tab](images/ui-settings-general.png)](images/ui-settings-general.png){: target="_blank" rel="noopener" title="Open full-size screenshot" }
+[![Settings, Logging tab](images/ui-logging-control.png)](images/ui-logging-control.png){: target="_blank" rel="noopener" title="Open full-size screenshot" }
 
-<figcaption>Theme, default model and export format under Settings → General.</figcaption>
+<figcaption>API keys and logging share one Settings dialog behind the gear icon.</figcaption>
 </figure>
 <p class="overview-takeaway">Only the model provider you choose ever sees the photo.</p>
 </section>

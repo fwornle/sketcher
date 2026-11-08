@@ -52,6 +52,24 @@ describe('parseShapesFromVLMResponse', () => {
     expect(relationships.filter(r => r.type === 'above')).toEqual([]);
   });
 
+  it('keeps the points of polylines and polygons, and falls back when they are missing', () => {
+    const road = [{ x: 0, y: 0 }, { x: 40, y: 30 }, { x: 80, y: 90 }];
+    const { shapes, errors } = parseShapesFromVLMResponse({
+      analysis_summary: summary,
+      elements: [
+        el({ id: '1', type: 'polyline', bounding_box: { x1: 0, y1: 0, x2: 80, y2: 90 }, points: road }),
+        el({ id: '2', type: 'polygon', points: [{ x: 5, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }] }),
+        el({ id: '3', type: 'polyline', points: null }),
+        el({ id: '4', type: 'polygon', points: [{ x: 0, y: 0 }] }),
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(shapes.map(s => s.type)).toEqual(['polyline', 'polygon', 'line', 'rectangle']);
+    expect(shapes[0].points).toEqual(road);
+    expect(shapes[1].points).toHaveLength(3);
+    expect(shapes[2].points).toBeUndefined();
+  });
+
   it('maps type aliases (square, line_segment, other_shape) to internal shape types', () => {
     const { shapes, errors } = parseShapesFromVLMResponse({
       analysis_summary: summary,

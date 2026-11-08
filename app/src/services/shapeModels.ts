@@ -9,7 +9,7 @@
 // import type { BoundingBox } from './boundingBox'; 
 
 // Define possible shape types
-export type ShapeType = 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'arrow' | 'line' | 'text' | 'parallelogram' | 'rhombus' | 'diamond' | 'hexagon' | 'octagon' | 'trapezoid';
+export type ShapeType = 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'arrow' | 'line' | 'text' | 'parallelogram' | 'rhombus' | 'diamond' | 'hexagon' | 'octagon' | 'trapezoid' | 'polyline' | 'polygon';
 
 /**
  * Represents the geometric bounding box of a shape.
@@ -38,6 +38,8 @@ export interface Shape {
     confidence?: number;
     // style?: ElementStyleProps; // Ensure only one style property
     text?: string;
+    // Stroke vertices in image pixels: polylines and polygons need them, lines and arrows may have them
+    points?: Array<{ x: number; y: number }>;
 }
 
 
