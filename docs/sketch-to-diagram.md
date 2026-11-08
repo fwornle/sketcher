@@ -13,9 +13,10 @@ Drop a photo, wait a few seconds, edit or download the diagram.
         ![Analysing a sketch](images/ui-analyzing.png){ .screenshot }
 
     3. **Use the result.** The composition summary says what the model thinks the sketch
-       shows; below it, the draw.io preview holds the editable diagram.
+       shows; beside it (below it in a narrow window), the draw.io preview holds the
+       editable diagram.
 
-        ![A real run with Claude Opus 5.5 on the sample sketch: the result and the editable diagram](images/ui-sample-sketch-result.png){ .screenshot }
+        ![A real run with Gemini 4 Argon on the sample sketch: the result and the editable diagram](images/ui-sample-sketch-result.png){ .screenshot }
 
     **Download .drawio** saves the diagram for draw.io desktop or app.diagrams.net.
     **Reset** clears the page for the next photo.
