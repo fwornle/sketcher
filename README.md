@@ -1,5 +1,9 @@
 # Sketcher
 
+[![docs](https://github.com/fwornle/sketcher/actions/workflows/docs.yml/badge.svg)](https://github.com/fwornle/sketcher/actions/workflows/docs.yml)
+
+📖 **Documentation: <https://fwornle.github.io/sketcher/>**: getting started, sketch-to-diagram walkthrough, vision models and API keys, architecture.
+
 A React application that uses Vision-Language Models (VLM/LLM) to analyze whiteboard images and extract structured diagram data.
 
 ## Quick Start

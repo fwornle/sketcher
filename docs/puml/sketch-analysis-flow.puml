@@ -1,0 +1,32 @@
+@startuml sketch-analysis-flow
+!include _standard-style.puml
+
+actor User
+participant "ImageUpload" as upload
+participant "analyzeSketch\n(thunk)" as thunk
+participant "VLM adapter" as adapter
+participant "VLM API" as api
+participant "shapeParser" as parser
+participant "selectDrawioXml" as selector
+participant "DrawioViewer" as viewer
+
+User -> upload : drop JPG / PNG (≤ 10 MB)
+upload -> thunk : dispatch({ dataUrl, fileName })
+thunk -> thunk : status = analyzing,\nread image size
+thunk -> adapter : analyzeImage(dataUrl, apiKey)
+alt Gemini and image hash cached
+  adapter --> thunk : cached response
+else
+  adapter -> api : image + structured prompt
+  api --> adapter : JSON: analysis_summary, elements[]
+  adapter -> adapter : strip fences/comments,\nvalidate schema
+  adapter --> thunk : VLMServiceResponse
+end
+thunk -> parser : parseShapesFromVLMResponse()
+parser --> thunk : shapes, relationships, warnings
+thunk -> thunk : status = succeeded
+selector -> selector : scale to 850×1100 page,\ngenerate mxGraph XML
+viewer -> viewer : wait for "ready" from iframe
+viewer -> viewer : postMessage(XML)
+User <-- viewer : editable diagram,\nDownload .drawio
+@enduml

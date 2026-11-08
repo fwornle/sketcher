@@ -1,0 +1,20 @@
+/* Shortcut buttons in the header (overrides/main.html, assets/header-shortcuts.js). */
+.md-header__button.header-shortcut {
+  margin: 0 0.1rem;
+  opacity: 0.85;
+}
+
+.md-header__button.header-shortcut:hover,
+.md-header__button.header-shortcut[aria-current] {
+  opacity: 1;
+}
+
+.md-header__button.header-shortcut[aria-current] {
+  border-bottom: 2px solid currentColor;
+}
+
+/* Screenshots: a hairline frame so white UI does not melt into the page. */
+.md-typeset img.screenshot {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 6px;
+}

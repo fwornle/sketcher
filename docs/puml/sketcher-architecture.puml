@@ -1,0 +1,41 @@
+@startuml sketcher-architecture
+!include _standard-style.puml
+top to bottom direction
+
+actor "User" as user
+
+package "View (React components)" {
+  component "Layout\nTopBar · SidebarMenu · BottomBar" as layout <<core>>
+  component "SketchWorkspace\nImageUpload · VlmSelector\nAnalysisResult · DrawioViewer" as workspace <<core>>
+  component "SettingsModal\nLoggingControl" as settings <<core>>
+}
+
+package "Model + Intent (Redux Toolkit)" {
+  component "sketchSlice\nanalyzeSketch thunk\nselectDrawioXml" as sketch <<core>>
+  component "preferencesSlice\nsidebarSlice" as prefs <<core>>
+}
+
+package "Services" {
+  component "vlmService\nGemini · Claude · GPT-4o adapters" as vlm <<api>>
+  component "shapeParser" as parser <<util>>
+  component "drawioConverter" as converter <<util>>
+  component "storage" as storage <<util>>
+}
+
+database "localStorage\n(sketcher_prefs)" as ls <<storage>>
+cloud "VLM APIs\nGoogle · Anthropic · OpenAI" as apis <<external>>
+cloud "embed.diagrams.net" as drawio <<external>>
+
+user --> workspace : upload photo
+user --> settings : keys, theme
+workspace --> sketch : dispatch intents
+settings --> prefs : save preferences
+sketch --> vlm : analyzeImage()
+vlm --> apis : HTTPS from the browser
+sketch --> parser : elements → shapes
+sketch --> converter : shapes → draw.io XML
+prefs --> storage
+storage --> ls
+workspace --> drawio : iframe + postMessage
+layout --> workspace : <Outlet/>
+@enduml

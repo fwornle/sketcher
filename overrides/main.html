@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{#
+  Shortcut icon buttons in the header, next to the theme toggle and search.
+  The list is `extra.shortcuts` in mkdocs.yml:
+    - title: shown as the tooltip and the accessible name
+      link:  the built page URL, relative to the site root
+             (e.g. architecture/ — not architecture.md: `url` does not map .md files)
+      icon:  a bundled Material icon path, e.g. material/sitemap-outline
+  assets/header-shortcuts.js moves the rendered links into the header bar.
+  Extending the block (rather than overriding the header partial) keeps this
+  working across Material releases.
+#}
+{% block header %}
+  {{ super() }}
+  {% if config.extra.shortcuts %}
+    <template id="header-shortcuts">
+      {% for item in config.extra.shortcuts %}
+        <a href="{{ item.link | url }}" class="md-header__button md-icon header-shortcut" title="{{ item.title }}" aria-label="{{ item.title }}">
+          {% include ".icons/" ~ item.icon ~ ".svg" %}
+        </a>
+      {% endfor %}
+    </template>
+  {% endif %}
+{% endblock %}

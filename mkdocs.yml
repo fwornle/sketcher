@@ -1,0 +1,115 @@
+site_name: Sketcher
+site_description: Turn whiteboard photos into editable draw.io diagrams with vision-language models
+site_url: https://fwornle.github.io/sketcher/
+repo_url: https://github.com/fwornle/sketcher
+repo_name: fwornle/sketcher
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+
+extra_css:
+  - assets/extra.css
+extra_javascript:
+  # The right-hand contents list follows the open tier tab (Quick / Deep Dive).
+  - assets/tabbed-toc.js
+  - assets/header-shortcuts.js
+
+theme:
+  name: material
+  # Header shortcut buttons (extra.shortcuts below).
+  custom_dir: overrides
+  icon:
+    logo: material/draw-pen
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    # Syncs the chosen tier (Quick / Deep Dive) across pages by label text and keeps it.
+    - content.tabs.link
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  # The Deep Dive tier of a page is a partial under docs/_tiers/, included by its shell
+  # page. check_paths: a mistyped include fails the build instead of publishing an empty tab.
+  - pymdownx.snippets:
+      base_path: [docs]
+      check_paths: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+# Tier partials are included into their page; PlantUML sources are rendered to images/.
+exclude_docs: |
+  _tiers/
+  puml/
+
+# A link to a missing #heading is INFO by default; --strict must fail on it.
+validation:
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Using Sketcher:
+    - Sketch to Diagram: sketch-to-diagram.md
+    - Vision Models & API Keys: vision-models.md
+    - Settings & Logging: settings.md
+  - How It Works:
+    - Architecture: architecture.md
+    - Analysis Pipeline: analysis-pipeline.md
+  - Reference:
+    - Development: development.md
+    - Troubleshooting: troubleshooting.md
+
+extra:
+  # Quick links, rendered as icon buttons in the header (overrides/main.html).
+  shortcuts:
+    - title: Getting started
+      link: getting-started/
+      icon: material/rocket-launch-outline
+    - title: Sketch to diagram, step by step
+      link: sketch-to-diagram/
+      icon: material/draw
+    - title: Architecture
+      link: architecture/
+      icon: material/sitemap-outline
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/fwornle/sketcher

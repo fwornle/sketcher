@@ -55,3 +55,7 @@ logs/
 
 # Private history repo — chat logs live in a separate <name>-history repo
 .specstory/history/
+
+# MkDocs build output and local virtualenv
+site/
+.venv/
