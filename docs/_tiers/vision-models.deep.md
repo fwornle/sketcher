@@ -66,9 +66,23 @@ Coordinates are pixels in the uploaded image, origin top-left. The prompt pushes
 to cross-check its own boxes ("if A is above B, A's `y2` must be below B's `y1`") and to
 report that check in `plausibility_check_notes`.
 
-Models sometimes wrap the JSON in Markdown fences or add `//` comments. The Gemini adapter
-strips both before parsing and falls back to the first `{…}` block if the text is still not
-valid JSON; the Claude and OpenAI adapters take the outermost `{…}` block of the answer.
+### Guaranteed JSON (structured outputs)
+
+Free-text JSON from a model can break: a trailing comma or a comment is enough to make the
+answer unparseable. So every request also sends the answer's **JSON schema**
+(`DIAGRAM_JSON_SCHEMA` in `vlmService.ts`), and each provider constrains the model to it:
+
+| Provider | Setting |
+|---|---|
+| Gemini | `generationConfig.responseFormat.text` with `mimeType: APPLICATION_JSON` and the schema |
+| Claude | `output_config.format` with `type: json_schema` |
+| OpenAI | `response_format` with `type: json_schema` and `strict: true` |
+
+The answer is therefore parsed as is. In the schema every object lists all its properties
+as required and allows no others, as strict modes demand; a value the model has nothing for
+is `null`. The first request with a new schema can take a little longer while the provider
+prepares it.
+
 The parsed object is then [validated](analysis-pipeline.md#3-validate-and-parse). If it is
 malformed but still holds usable elements, those are kept and the rest is reported as a
 warning.

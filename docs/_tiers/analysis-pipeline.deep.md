@@ -23,6 +23,10 @@ colour, fill, text and spatial relationships. It tells the model to cross-check 
 boxes against the relationships it reports and to write the result of that check into
 `plausibility_check_notes`. The full prompt is in `app/src/services/vlmService.ts`.
 
+The same format is also sent as a JSON schema, which each provider enforces (structured
+outputs), so the answer is always parseable JSON; see
+[Vision Models](vision-models.md#guaranteed-json-structured-outputs).
+
 Gemini answers are cached in memory by a SHA-256 hash of the image (50 entries, least
 recently used evicted first).
 

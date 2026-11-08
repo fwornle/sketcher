@@ -153,8 +153,8 @@ const GEMINI_PROMPTS: Record<string, string> = {
 };
 
 /**
- * JSON schema of the answer the analysis prompt asks for, used where a provider can enforce
- * it (Claude structured outputs). Every object sets additionalProperties: false and lists all
+ * JSON schema of the answer the analysis prompt asks for. Every provider enforces it:
+ * Claude structured outputs, Gemini responseFormat, OpenAI strict json_schema. Every object sets additionalProperties: false and lists all
  * its properties as required, as structured outputs demand; absent values are null.
  */
 const nullableNumber = { anyOf: [{ type: 'number' }, { type: 'null' }] };
@@ -499,7 +499,11 @@ class GeminiAdapter implements VLMService {
             { text: prompt }
           ]
         }
-      ]
+      ],
+      // Structured output: the answer is JSON that matches the diagram schema
+      generationConfig: {
+        responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: DIAGRAM_JSON_SCHEMA } },
+      },
     };
     let lastError: unknown = null;
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
@@ -543,47 +547,14 @@ class GeminiAdapter implements VLMService {
           throw new GeneralAPIError('No valid text content found in Gemini response.');
         }
 
-        // Clean the text response before parsing more robustly
-        const cleanedText = text
-          .replace(/\/\/.*$/gm, '')      // Remove // comments
-          .replace(/\.\.\./g, '')         // Remove ... placeholders
-          // Robust fence removal (case-insensitive, flexible whitespace)
-          .replace(/^\s*```(?:json)?\s*\n?|\n?\s*```\s*$/gim, '') 
-          .trim();                       // Trim whitespace
-
+        // Structured output (responseFormat below) makes the answer JSON matching the schema
         let parsed: unknown;
-        Logger.debug(Logger.Categories.VLM, "Attempting to parse cleaned text:", cleanedText); // Log cleaned text
         try {
-            // Attempt to parse the cleaned text directly
-            parsed = JSON.parse(cleanedText);
+          parsed = JSON.parse(text);
         } catch (parseError) {
-            Logger.warn(Logger.Categories.VLM, "Parsing cleaned text failed, attempting regex fallback...", parseError);
-            // Fallback: Try regex match on original text
-            // Use non-greedy match to find the first potential JSON object
-            const jsonMatch = text.match(/\{([\s\S]*?)\}/);
-            if (jsonMatch && jsonMatch[0]) {
-                Logger.debug(Logger.Categories.VLM, "Regex fallback match found:", jsonMatch[0]);
-                // Clean the regex match as well before parsing
-                const cleanedMatch = jsonMatch[0]
-                    .replace(/\/\/.*$/gm, '')
-                    .replace(/\.\.\./g, '')
-                    // Apply robust fence removal here too, just in case regex included them
-                    .replace(/^\s*```(?:json)?\s*\n?|\n?\s*```\s*$/gim, '')
-                    .trim();
-                Logger.debug(Logger.Categories.VLM, "Attempting to parse cleaned regex match:", cleanedMatch); // Log cleaned match
-                try {
-                    parsed = JSON.parse(cleanedMatch);
-                } catch (fallbackParseError) {
-                    Logger.error(Logger.Categories.VLM, "Fallback JSON parsing also failed:", fallbackParseError);
-                    Logger.error(Logger.Categories.VLM, "Original text was:", text); // Log original for debugging
-                    throw new GeneralAPIError('No valid JSON found in Gemini response even after cleaning and regex fallback.');
-                }
-            } else {
-                 Logger.error(Logger.Categories.VLM, "No JSON object found via regex in original text:", text);
-                 throw new GeneralAPIError('No valid JSON found in Gemini response after cleaning and regex attempt.');
-            }
+          Logger.error(Logger.Categories.VLM, 'Gemini returned invalid JSON:', parseError, text);
+          throw new GeneralAPIError('Gemini returned invalid JSON.');
         }
-        // --- End: JSON Parsing and Cleaning ---
 
         // Ensure parsed data is an object before proceeding
         if (typeof parsed !== 'object' || parsed === null) {
@@ -803,11 +774,20 @@ class Gpt4oAdapter implements VLMService {
               ],
             },
           ],
+          // Structured Outputs: strict mode makes the answer JSON that matches the schema
+          response_format: {
+            type: 'json_schema',
+            json_schema: { name: 'diagram', strict: true, schema: DIAGRAM_JSON_SCHEMA },
+          },
         });
-        const text = response.choices?.[0]?.message?.content || '';
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new GeneralAPIError('No JSON found in GPT-4o response.');
-        const parsed = JSON.parse(jsonMatch[0]);
+        const message = response.choices?.[0]?.message;
+        if (message?.refusal) {
+          throw new GeneralAPIError(`OpenAI declined to analyze this image: ${message.refusal}`);
+        }
+        if (response.choices?.[0]?.finish_reason === 'length') {
+          throw new GeneralAPIError('OpenAI response was cut off (max_completion_tokens reached).');
+        }
+        const parsed = JSON.parse(message?.content || '');
         // Validate against schema
         const validation = validateStructuredDiagram(parsed);
         if (!validation.valid) {
