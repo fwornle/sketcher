@@ -2,7 +2,8 @@
  * SidebarMenu.tsx
  *
  * Slide-out sidebar navigation menu with Redux state management.
- * Opens on mouse hover near left edge, closes on click outside.
+ * Opens on mouse hover near left edge, closes on click outside or when the
+ * mouse leaves the window.
  * Features smooth animations and keyboard accessibility.
  */
 
@@ -61,6 +62,25 @@ export function SidebarMenu() {
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
   }, [isOpen, handleOpen]);
+
+  // Close sidebar when the mouse leaves the window, so brushing past the
+  // left edge on the way to another screen does not leave it open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleMouseOut = (e: MouseEvent) => {
+      // relatedTarget is null when the pointer leaves the document; the
+      // bounds check excludes moves into an iframe, which also report null
+      const outside = e.clientX <= 0 || e.clientY <= 0
+        || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight;
+      if (!e.relatedTarget && outside) {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('mouseout', handleMouseOut);
+    return () => document.removeEventListener('mouseout', handleMouseOut);
+  }, [isOpen, handleClose]);
 
   // Close sidebar on route change
   useEffect(() => {

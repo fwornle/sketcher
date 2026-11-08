@@ -38,11 +38,11 @@ export function Layout({ appName = 'Sketcher' }: LayoutProps) {
         className="sticky top-0 z-50"
       />
 
-      {/* Sidebar Menu - opens on left edge hover, closes on click outside */}
+      {/* Sidebar Menu - opens on left edge hover, closes on click outside or leaving the window */}
       <SidebarMenu />
 
       <main className="flex-1 w-full">
-        <div className="container mx-auto px-4 py-6 md:px-6 lg:px-8 max-w-7xl">
+        <div className="w-full px-4 py-6 md:px-6 lg:px-8">
           <Outlet />
         </div>
       </main>
