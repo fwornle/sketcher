@@ -60,9 +60,12 @@ export function generateDrawioXml(
   // Use the smaller scale factor to maintain aspect ratio and fit within target bounds
   const scale = Math.min(scaleX, scaleY);
 
-  // Separate shapes into triangles and non-triangles for Z-ordering
-  const nonTriangles = shapes.filter(s => s.type !== 'triangle');
-  const triangles = shapes.filter(s => s.type === 'triangle');
+  // Z-ordering: larger shapes first, so smaller ones lie on top of them and stay visible and
+  // selectable; triangles after everything else so roofs and arrow heads stay on top
+  const area = (s: Shape) => s.boundingBox.width * s.boundingBox.height;
+  const byAreaDescending = (a: Shape, b: Shape) => area(b) - area(a);
+  const nonTriangles = shapes.filter(s => s.type !== 'triangle').sort(byAreaDescending);
+  const triangles = shapes.filter(s => s.type === 'triangle').sort(byAreaDescending);
 
   // Generate XML for non-triangles first
   const nonTriangleXml = nonTriangles.map(element => {
@@ -156,8 +159,9 @@ export function generateDrawioXml(
 
     // Additional styles (applied to all vertex shapes AFTER base styles)
     // Re-add fill color logic for non-text shapes
-    if (element.style?.fill && element.type !== 'text') {
-        styleString += `fillColor=${element.style.fill};`;
+    // Unfilled shapes are transparent: drawio's default white fill would hide what lies below
+    if (element.type !== 'text') {
+        styleString += `fillColor=${element.style?.fill ?? 'none'};`;
     }
     // Stroke color applies to the shape border (unless it's text)
     if (element.style?.color && element.type !== 'text') {
@@ -218,7 +222,7 @@ export function generateDrawioXml(
 
     // Additional styles
     if (element.style?.color) styleString += `strokeColor=${element.style.color};`;
-    if (element.style?.fill) styleString += `fillColor=${element.style.fill};`;
+    styleString += `fillColor=${element.style?.fill ?? 'none'};`;
     if (element.style?.lineStyle && element.style.lineStyle !== 'solid') {
       // drawio only honours dashPattern when dashed=1, so dotted lines need both
       styleString += 'dashed=1;';

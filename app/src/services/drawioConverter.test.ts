@@ -145,6 +145,31 @@ describe('generateDrawioXml', () => {
   });
 });
 
+describe('generateDrawioXml z-order and fill', () => {
+  it('draws larger shapes first so smaller ones stay on top', () => {
+    const shapes: Shape[] = [
+      { id: 'door', type: 'rectangle', boundingBox: { x: 40, y: 50, width: 20, height: 50 } },
+      { id: 'body', type: 'rectangle', boundingBox: { x: 0, y: 0, width: 100, height: 100 } },
+      { id: 'window', type: 'circle', boundingBox: { x: 10, y: 10, width: 10, height: 10 } },
+    ];
+    const xml = generateDrawioXml(shapes, [], PAGE);
+    const order = ['body', 'door', 'window'].map(id => xml.indexOf(`id="el-${id}"`));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+
+  it('leaves unfilled shapes transparent and keeps a reported fill', () => {
+    const shapes: Shape[] = [
+      { id: 'plain', type: 'rectangle', boundingBox: { x: 0, y: 0, width: 10, height: 10 } },
+      { id: 'red', type: 'rectangle', boundingBox: { x: 20, y: 0, width: 10, height: 10 }, style: { fill: '#ff0000' } },
+      { id: 'tri', type: 'triangle', boundingBox: { x: 40, y: 0, width: 10, height: 10 } },
+    ];
+    const xml = generateDrawioXml(shapes, [], PAGE);
+    expect(cell(xml, 'el-plain')).toContain('fillColor=none');
+    expect(cell(xml, 'el-red')).toContain('fillColor=#ff0000');
+    expect(cell(xml, 'el-tri')).toContain('fillColor=none');
+  });
+});
+
 describe('encodeDrawioXml', () => {
   it('deflates and base64-encodes the mxGraphModel so it round-trips', () => {
     const shapes: Shape[] = [{ id: 's1', type: 'rectangle', boundingBox: { x: 0, y: 0, width: 10, height: 10 } }];
