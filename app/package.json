@@ -16,7 +16,7 @@
     "version:major": "npm version major --no-git-tag-version"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@anthropic-ai/sdk": "^1.6.0",
     "@headlessui/react": "^2.2.9",
     "@reduxjs/toolkit": "^2.11.0",
     "class-variance-authority": "^0.7.1",

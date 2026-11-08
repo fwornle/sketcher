@@ -587,11 +587,15 @@ class ClaudeAdapter implements VLMService {
     let lastError: unknown = null;
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
-        const msg = await anthropic.messages.create({
+        const msg = await anthropic.beta.messages.create({
           // Thinking is always on for this model (it shares max_tokens with the answer);
           // sampling parameters such as temperature are rejected with a 400.
           model: 'claude-fable-5-1',
           max_tokens: 16000,
+          // If Fable's safety classifiers decline, the API re-runs the request on the
+          // model Anthropic recommends for that refusal category, within the same call.
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default',
           system: 'You are an expert visual analysis assistant.',
           messages: [
             {
@@ -610,8 +614,13 @@ class ClaudeAdapter implements VLMService {
             },
           ],
         });
-        // 'refusal' is newer than the SDK's stop_reason type
-        if ((msg.stop_reason as string) === 'refusal') {
+        for (const block of msg.content) {
+          if (block.type === 'fallback') {
+            Logger.info(Logger.Categories.VLM, `[Claude] ${block.from.model} declined; ${block.to.model} continued`);
+          }
+        }
+        // A refusal here means the fallback model declined too
+        if (msg.stop_reason === 'refusal') {
           throw new GeneralAPIError('Claude declined to analyze this image.');
         }
         if (msg.stop_reason === 'max_tokens') {
@@ -619,7 +628,7 @@ class ClaudeAdapter implements VLMService {
         }
         // The answer follows any thinking blocks, so pick the text block rather than content[0]
         const text = msg.content
-          .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+          .filter((block): block is Anthropic.Beta.BetaTextBlock => block.type === 'text')
           .map(block => block.text)
           .join('');
         const jsonMatch = text.match(/\{[\s\S]*\}/);

@@ -8,7 +8,7 @@ a third server.
 | Model in the list | API model | Notes |
 |---|---|---|
 | Google Gemini 4 Argon | `gemini-4-argon` | REST call; thought parts are skipped, answers cached per image (see below) |
-| Anthropic Claude Fable 5.1 | `claude-fable-5-1` | Anthropic SDK, up to 16000 output tokens (thinking is always on and shares that budget) |
+| Anthropic Claude Fable 5.1 | `claude-fable-5-1` | Anthropic SDK 1.x (API version `2026-10-21`), up to 16000 output tokens (thinking is always on and shares that budget), server-side fallback on refusal |
 | OpenAI GPT-6 Astra | `gpt-6-astra` | OpenAI SDK (chat completions), up to 16000 completion tokens including reasoning |
 
 Each is its provider's most capable publicly available model, and all three reason before
@@ -84,9 +84,18 @@ answers HTTP 5xx. Other errors end the attempt at once and are shown as:
 | Network failure (offline, blocked) | *Failed to fetch* |
 
 **Claude and OpenAI** show the error message of the provider's SDK as is (for example
-*401 invalid x-api-key*) and do not retry. Claude additionally reports *Claude declined to
-analyze this image.* when the model refuses, and *Claude response was cut off* when the
-answer hits the output limit.
+*401 invalid x-api-key*) and do not retry. Claude also reports *Claude response was cut
+off* when the answer hits the output limit.
+
+### Refusals and the Claude fallback
+
+Claude Fable 5.1's safety classifiers occasionally decline a request. Sketcher opts into
+Anthropic's **server-side fallback** (`fallbacks: "default"`, beta
+`server-side-fallback-2026-07-01`): when Fable declines, the API re-runs the same request
+on the model Anthropic recommends for that refusal category (Claude Opus 5 or Opus 4.8),
+inside the same call. The fallback answer is used like any other; the `VLM` log category
+records *claude-fable-5-1 declined; … continued*. Only if the fallback model declines as
+well does the app show *Claude declined to analyze this image.*
 
 ## Caching (Gemini)
 
