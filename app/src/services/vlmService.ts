@@ -395,7 +395,7 @@ class GeminiAdapter implements VLMService {
       Logger.info(Logger.Categories.VLM, '[Gemini] Cache hit for image');
       return cached;
     }
-    const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + (apiKey || this.apiKey);
+    const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-4-argon:generateContent?key=' + (apiKey || this.apiKey);
     const base64 = imageDataUrl.split(',')[1];
     const prompt = buildGeminiPrompt('v1');
     const requestBody = {
@@ -441,7 +441,9 @@ class GeminiAdapter implements VLMService {
         
         // --- Start: JSON Parsing and Cleaning ---
         const rawResponseData = await res.json(); // Parse the outer structure first
-        const text = rawResponseData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        // Thinking models may return thought parts before the answer; keep only the answer text
+        const parts: Array<{ text?: string; thought?: boolean }> = rawResponseData?.candidates?.[0]?.content?.parts ?? [];
+        const text = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('');
         
         if (!text) {
           Logger.error(Logger.Categories.VLM, "Invalid response structure or missing text content from Gemini:", rawResponseData);
@@ -582,7 +584,7 @@ class ClaudeAdapter implements VLMService {
         const msg = await anthropic.messages.create({
           // Thinking is always on for this model (it shares max_tokens with the answer);
           // sampling parameters such as temperature are rejected with a 400.
-          model: 'claude-opus-5-5',
+          model: 'claude-fable-5-1',
           max_tokens: 16000,
           system: 'You are an expert visual analysis assistant.',
           messages: [
@@ -670,7 +672,7 @@ class Gpt4oAdapter implements VLMService {
   // Helper to extract base64 PNG bytes from a data URL
   private dataUrlToBase64Png(dataUrl: string): string {
     if (!dataUrl.startsWith('data:image/png;base64,')) {
-      throw new Error('Only PNG images are supported for GPT-4o Vision');
+      throw new Error('Only PNG images are supported for OpenAI vision');
     }
     return dataUrl.replace(/^data:image\/png;base64,/, '');
   }
@@ -683,9 +685,10 @@ class Gpt4oAdapter implements VLMService {
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
         const response = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          max_tokens: 4096,
-          temperature: 0.2,
+          // Reasoning model: rejects temperature, and reasoning tokens count against
+          // max_completion_tokens (max_tokens is deprecated)
+          model: 'gpt-6-astra',
+          max_completion_tokens: 16000,
           messages: [
             {
               role: 'user',

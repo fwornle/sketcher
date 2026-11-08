@@ -40,7 +40,7 @@ board straight on and crop to the drawing.
 typically an `other_shape` type. Open **Raw JSON** to see what the model returned.
 
 **Empty result with *Dummy response*.** A *not yet supported* model is selected. Pick
-Gemini, Claude or GPT-4o.
+Gemini, Claude or OpenAI GPT-6 Astra.
 
 ## Development problems
 

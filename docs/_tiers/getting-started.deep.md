@@ -2,7 +2,7 @@
 
 - **Node.js 20 or newer** (Vite 7 needs 20.19+). Check with `node --version`.
 - **An API key** for at least one supported model: Google Gemini, Anthropic Claude or
-  OpenAI GPT-4o. See [Vision Models & API Keys](vision-models.md).
+  OpenAI GPT. See [Vision Models & API Keys](vision-models.md).
 - **Internet access** from the browser: the model APIs and the draw.io preview
   (`embed.diagrams.net`) are called directly from the page.
 

@@ -69,7 +69,7 @@ app/src/
 
 ## VLM/LLM Integration
 
-The app integrates with Gemini API to analyze uploaded whiteboard images:
+The app sends uploaded whiteboard images to a vision-language model (Gemini 4 Argon by default; Claude Fable 5.1 and OpenAI GPT-6 Astra are also supported):
 
 1. User uploads an image
 2. Image is sent to the VLM service
@@ -79,7 +79,7 @@ The app integrates with Gemini API to analyze uploaded whiteboard images:
 ### Setup
 
 1. Start the app: `npm run dev`
-2. Open Settings (gear icon) → API Keys and enter your Gemini (or Claude / GPT-4o) API key
+2. Open Settings (gear icon) → API Keys and enter your Gemini (or Claude / OpenAI) API key
 3. Upload a whiteboard image to extract diagram data
 
 ### Troubleshooting

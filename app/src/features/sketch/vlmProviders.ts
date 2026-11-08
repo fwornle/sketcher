@@ -10,9 +10,10 @@ export interface VlmProvider {
 }
 
 export const VLM_PROVIDERS: VlmProvider[] = [
-  { key: 'gemini', label: 'Google Gemini Pro Vision', apiKeyField: 'geminiApiKey', implemented: true, keyHint: 'Get your key from Google AI Studio.' },
-  { key: 'claude', label: 'Anthropic Claude', apiKeyField: 'claudeApiKey', implemented: true, keyHint: 'Get your key from the Anthropic Console.' },
-  { key: 'gpt4o', label: 'OpenAI GPT-4o', apiKeyField: 'gpt4oApiKey', implemented: true, keyHint: 'Get your key from the OpenAI platform.' },
+  { key: 'gemini', label: 'Google Gemini 4 Argon', apiKeyField: 'geminiApiKey', implemented: true, keyHint: 'Get your key from Google AI Studio.' },
+  { key: 'claude', label: 'Anthropic Claude Fable 5.1', apiKeyField: 'claudeApiKey', implemented: true, keyHint: 'Get your key from the Anthropic Console.' },
+  // Key kept as 'gpt4o' so stored API keys and selections survive the model change.
+  { key: 'gpt4o', label: 'OpenAI GPT-6 Astra', apiKeyField: 'gpt4oApiKey', implemented: true, keyHint: 'Get your key from the OpenAI platform.' },
   { key: 'qwen', label: 'Qwen2.5-VL', apiKeyField: 'qwenApiKey', implemented: false, keyHint: 'Get your key from the provider.' },
   { key: 'florence', label: 'Florence-2', apiKeyField: 'florenceApiKey', implemented: false, keyHint: 'Get your key from the provider.' },
   { key: 'cogvlm', label: 'CogVLM (Ollama)', apiKeyField: 'cogvlmApiKey', implemented: false, keyHint: 'Get your key from the provider.' },

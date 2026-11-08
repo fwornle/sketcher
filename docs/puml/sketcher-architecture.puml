@@ -16,7 +16,7 @@ package "Model + Intent (Redux Toolkit)" {
 }
 
 package "Services" {
-  component "vlmService\nGemini · Claude · GPT-4o adapters" as vlm <<api>>
+  component "vlmService\nGemini · Claude · OpenAI adapters" as vlm <<api>>
   component "shapeParser" as parser <<util>>
   component "drawioConverter" as converter <<util>>
   component "storage" as storage <<util>>

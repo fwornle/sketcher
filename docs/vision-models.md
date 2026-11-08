@@ -8,9 +8,9 @@ Which models Sketcher can use, and where to get a key for each.
 
     | Model | Key from | Status |
     |---|---|---|
-    | **Google Gemini** (default) | [Google AI Studio](https://aistudio.google.com/apikey) | ✅ supported |
-    | **Anthropic Claude** | [Anthropic Console](https://console.anthropic.com/) | ✅ supported |
-    | **OpenAI GPT-4o** | [OpenAI platform](https://platform.openai.com/api-keys) | ✅ supported |
+    | **Google Gemini 4 Argon** (default) | [Google AI Studio](https://aistudio.google.com/apikey) | ✅ supported |
+    | **Anthropic Claude Fable 5.1** | [Anthropic Console](https://console.anthropic.com/) | ✅ supported |
+    | **OpenAI GPT-6 Astra** | [OpenAI platform](https://platform.openai.com/api-keys) | ✅ supported |
     | Qwen2.5-VL, Florence-2, CogVLM, LLaVA | — | listed, not yet supported |
 
     Paste the key under **Settings → API Keys**, pick the model in the **Vision model**
