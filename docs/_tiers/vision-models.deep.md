@@ -8,7 +8,8 @@ a third server.
 | Model in the list | API model | Notes |
 |---|---|---|
 | Google Gemini 4 Argon | `gemini-4-argon` | REST call; thought parts are skipped, answers cached per image (see below) |
-| Anthropic Claude Fable 5.1 | `claude-fable-5-1` | Anthropic SDK 1.x (API version `2026-10-21`), up to 16000 output tokens (thinking is always on and shares that budget), server-side fallback on refusal |
+| Anthropic Claude Fable 5.1 | `claude-fable-5-1` | Anthropic SDK 1.x (API version `2026-10-21`), structured outputs, up to 16000 output tokens (thinking is always on and shares that budget), server-side fallback on refusal |
+| Anthropic Claude Opus 5.5 | `claude-opus-5-5` | Same as Fable 5.1, with effort set to `high` (Opus 5.5 defaults to `medium`); cheaper than Fable |
 | OpenAI GPT-6 Astra | `gpt-6-astra` | OpenAI SDK (chat completions), up to 16000 completion tokens including reasoning |
 
 Each is its provider's most capable publicly available model, and all three reason before
@@ -24,11 +25,12 @@ answering, so expect an analysis to take tens of seconds. The model IDs are set 
 
 Gemini has a free tier, which makes it the cheapest way to try Sketcher.
 
-### Anthropic Claude Fable 5.1
+### Anthropic Claude (Fable 5.1 and Opus 5.5)
 
 1. Open the [Anthropic Console](https://console.anthropic.com/) → **API Keys**.
 2. Create a key, copy it.
-3. Paste it under **Anthropic Claude Fable 5.1 API Key**.
+3. Paste it under **Anthropic Claude API Key**. The one key serves both Claude models; pick
+   Fable 5.1 or Opus 5.5 in the **Vision model** list.
 
 ### OpenAI GPT-6 Astra
 
@@ -89,9 +91,9 @@ off* when the answer hits the output limit.
 
 ### Refusals and the Claude fallback
 
-Claude Fable 5.1's safety classifiers occasionally decline a request. Sketcher opts into
+Claude's safety classifiers occasionally decline a request. For both Claude models Sketcher opts into
 Anthropic's **server-side fallback** (`fallbacks: "default"`, beta
-`server-side-fallback-2026-07-01`): when Fable declines, the API re-runs the same request
+`server-side-fallback-2026-07-01`): when the model declines, the API re-runs the same request
 on the model Anthropic recommends for that refusal category (Claude Opus 5 or Opus 4.8),
 inside the same call. The fallback answer is used like any other; the `VLM` log category
 records *claude-fable-5-1 declined; … continued*. Only if the fallback model declines as

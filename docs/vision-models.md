@@ -10,6 +10,7 @@ Which models Sketcher can use, and where to get a key for each.
     |---|---|---|
     | **Google Gemini 4 Argon** (default) | [Google AI Studio](https://aistudio.google.com/apikey) | ✅ supported |
     | **Anthropic Claude Fable 5.1** | [Anthropic Console](https://console.anthropic.com/) | ✅ supported |
+    | **Anthropic Claude Opus 5.5** | same Anthropic key | ✅ supported |
     | **OpenAI GPT-6 Astra** | [OpenAI platform](https://platform.openai.com/api-keys) | ✅ supported |
     | Qwen2.5-VL, Florence-2, CogVLM, LLaVA | — | listed, not yet supported |
 

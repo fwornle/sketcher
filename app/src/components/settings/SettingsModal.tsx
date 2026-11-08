@@ -13,9 +13,11 @@ interface SettingsModalProps {
 
 type Tab = 'general' | 'apiKeys';
 
-/** API key fields shown in the settings, in display order. */
+/** API key fields shown in the settings, in display order; providers sharing a key get one field. */
 const API_KEY_FIELDS: Array<{ field: ApiKeyField; label: string; hint: string }> = [
-  ...VLM_PROVIDERS.map(p => ({ field: p.apiKeyField, label: p.label, hint: p.keyHint })),
+  ...VLM_PROVIDERS
+    .filter((p, i) => VLM_PROVIDERS.findIndex(q => q.apiKeyField === p.apiKeyField) === i)
+    .map(p => ({ field: p.apiKeyField, label: p.keyLabel ?? p.label, hint: p.keyHint })),
   { field: 'gemma4ApiKey', label: 'Gemma4', hint: 'Get your key from the Gemma4 provider.' },
 ];
 

@@ -650,33 +650,46 @@ class GeminiAdapter implements VLMService {
 }
 
 /* ClaudeAdapter: Implements VLMService for Anthropic Claude Vision API */
+/** The Claude models Sketcher offers; each runs through the same adapter. */
+const CLAUDE_MODELS = {
+  // Fable 5.1's default effort is already high.
+  claude: { model: 'claude-fable-5-1', effort: undefined },
+  // Opus 5.5 defaults to medium effort; raise it to match Fable for precise geometry.
+  'claude-opus': { model: 'claude-opus-5-5', effort: 'high' },
+} as const;
+
+type ClaudeProviderKey = keyof typeof CLAUDE_MODELS;
+
 class ClaudeAdapter implements VLMService {
   private apiKey: string;
+  private providerKey: ClaudeProviderKey;
   private maxRetries = 3;
   private baseDelay = 500; // ms
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, providerKey: ClaudeProviderKey = 'claude') {
     this.apiKey = apiKey;
+    this.providerKey = providerKey;
   }
 
   async analyzeImage(imageDataUrl: string, apiKey?: string): Promise<VLMServiceResponse> {
     const { mediaType, data: imageBase64 } = parseImageDataUrl(imageDataUrl);
     const prompt = buildGeminiPrompt('v1'); // Use the same prompt for consistency
     const anthropic = new Anthropic({ apiKey: apiKey || this.apiKey, dangerouslyAllowBrowser: true });
+    const { model, effort } = CLAUDE_MODELS[this.providerKey];
     let lastError: unknown = null;
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
         const msg = await anthropic.beta.messages.create({
-          // Thinking is always on for this model (it shares max_tokens with the answer);
+          // Thinking is always on for these models (it shares max_tokens with the answer);
           // sampling parameters such as temperature are rejected with a 400.
-          model: 'claude-fable-5-1',
+          model,
           max_tokens: 16000,
           // If Fable's safety classifiers decline, the API re-runs the request on the
           // model Anthropic recommends for that refusal category, within the same call.
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default',
           // Structured outputs: the API guarantees the answer is valid JSON matching the schema
-          output_config: { format: { type: 'json_schema', schema: DIAGRAM_JSON_SCHEMA } },
+          output_config: { format: { type: 'json_schema', schema: DIAGRAM_JSON_SCHEMA }, ...(effort && { effort }) },
           system: 'You are an expert visual analysis assistant.',
           messages: [
             {
@@ -721,12 +734,12 @@ class ClaudeAdapter implements VLMService {
               analysis_summary: validation.partial.analysis_summary ?? { total_distinct_elements: 0, composition_interpretation: 'Partial parse error' },
               elements: validation.partial.elements ?? [],
               plausibility_check_notes: validation.partial.plausibility_check_notes ?? 'Partial parse error',
-              vlmProvider: 'claude',
+              vlmProvider: this.providerKey,
             };
           }
           throw new GeneralAPIError('Malformed Claude output: ' + validation.errors.join('; '));
         }
-        return { ...parsed, vlmProvider: 'claude' } as VLMServiceResponse;
+        return { ...parsed, vlmProvider: this.providerKey } as VLMServiceResponse;
       } catch (err: unknown) {
         lastError = err;
         // Only retry on transient errors
@@ -860,7 +873,8 @@ function getVlmAdapter(vlmType: string, apiKey: string = ''): VLMService {
     case 'gemini':
       return new GeminiAdapter(apiKey);
     case 'claude':
-      return new ClaudeAdapter(apiKey);
+    case 'claude-opus':
+      return new ClaudeAdapter(apiKey, vlmType);
     case 'gpt4o':
       return new Gpt4oAdapter(apiKey);
     default:

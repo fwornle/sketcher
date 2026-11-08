@@ -69,7 +69,7 @@ app/src/
 
 ## VLM/LLM Integration
 
-The app sends uploaded whiteboard images to a vision-language model (Gemini 4 Argon by default; Claude Fable 5.1 and OpenAI GPT-6 Astra are also supported):
+The app sends uploaded whiteboard images to a vision-language model (Gemini 4 Argon by default; Claude Fable 5.1, Claude Opus 5.5 and OpenAI GPT-6 Astra are also supported):
 
 1. User uploads an image
 2. Image is sent to the VLM service

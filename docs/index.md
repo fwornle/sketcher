@@ -7,7 +7,7 @@ Photograph a whiteboard sketch, and Sketcher turns it into an editable draw.io d
     ## What it does
 
     1. You drop a photo of a whiteboard sketch into the app.
-    2. A vision-language model (Gemini 4 Argon, Claude Fable 5.1 or GPT-6 Astra) identifies every shape, its
+    2. A vision-language model (Gemini 4 Argon, Claude Fable 5.1, Claude Opus 5.5 or GPT-6 Astra) identifies every shape, its
        position, size, colour and text.
     3. Sketcher rebuilds those shapes as a draw.io diagram you can edit in the browser or
        download as a `.drawio` file.
