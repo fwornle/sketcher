@@ -164,7 +164,8 @@ export function generateDrawioXml(
          styleString += `strokeColor=${element.style.color};`;
     }
     if (element.style?.lineStyle && element.style.lineStyle !== 'solid') {
-      styleString += `dashed=${element.style.lineStyle === 'dashed' ? 1 : 0};`;
+      // drawio only honours dashPattern when dashed=1, so dotted lines need both
+      styleString += 'dashed=1;';
       if (element.style.lineStyle === 'dotted') styleString += 'dashPattern=1 4;';
     }
     if (element.style?.fontWeight === 'bold') styleString += 'fontStyle=1;';
@@ -219,7 +220,8 @@ export function generateDrawioXml(
     if (element.style?.color) styleString += `strokeColor=${element.style.color};`;
     if (element.style?.fill) styleString += `fillColor=${element.style.fill};`;
     if (element.style?.lineStyle && element.style.lineStyle !== 'solid') {
-      styleString += `dashed=${element.style.lineStyle === 'dashed' ? 1 : 0};`;
+      // drawio only honours dashPattern when dashed=1, so dotted lines need both
+      styleString += 'dashed=1;';
       if (element.style.lineStyle === 'dotted') styleString += 'dashPattern=1 4;';
     }
     if (element.style?.fontWeight === 'bold') styleString += 'fontStyle=1;';

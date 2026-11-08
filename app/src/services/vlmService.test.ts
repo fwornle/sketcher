@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GEMINI_CACHE, validateStructuredDiagram } from './vlmService';
 
 // Mock GeminiAdapter and dependencies
-import type { VLMService, StructuredDiagram } from './vlmService';
+import type { VLMService, VLMServiceResponse } from './vlmService';
 
 // Sample base64 image (very short, just for test)
 const SAMPLE_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA';
@@ -10,15 +10,18 @@ const SAMPLE_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA';
 // Mock GeminiAdapter for testing (simulate API call and cache)
 class MockGeminiAdapter implements VLMService {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async analyzeImage(_imageDataUrl: string): Promise<StructuredDiagram> {
-    // Simulate a valid response
+  async analyzeImage(_imageDataUrl: string): Promise<VLMServiceResponse> {
+    // Simulate a valid v2 response
     return {
+      analysis_summary: { total_distinct_elements: 2, composition_interpretation: 'Test' },
       elements: [
-        { id: '1', type: 'rectangle', boundingBox: { x: 0, y: 0, width: 10, height: 10 }, text: 'Test', style: { color: 'black' } }
+        {
+          id: '1', type: 'rectangle', bounding_box: { x1: 0, y1: 0, x2: 10, y2: 10 },
+          style_info: { color: 'black' },
+          relationships: [{ related_element_id: 2, relation_type: 'left_of' }],
+        },
+        { id: '2', type: 'text', bounding_box: { x1: 20, y1: 0, x2: 40, y2: 10 }, text_content: 'Test' },
       ],
-      relationships: [
-        { id: 'r1', type: 'connects', sourceId: '1', targetId: '1' }
-      ]
     };
   }
 }
@@ -26,7 +29,7 @@ class MockGeminiAdapter implements VLMService {
 // Mock GeminiAdapter for error simulation
 class ErrorGeminiAdapter implements VLMService {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async analyzeImage(_imageDataUrl: string): Promise<StructuredDiagram> {
+  async analyzeImage(_imageDataUrl: string): Promise<VLMServiceResponse> {
     throw new Error('Simulated API failure');
   }
 }
@@ -40,12 +43,12 @@ describe('VLMService Integration', () => {
     service = new MockGeminiAdapter();
   });
 
-  it('returns a valid StructuredDiagram for a sample image', async () => {
+  it('returns a valid diagram response for a sample image', async () => {
     const result = await service.analyzeImage(SAMPLE_IMAGE);
     const validation = validateStructuredDiagram(result);
     expect(validation.valid).toBe(true);
     expect(result.elements.length).toBeGreaterThan(0);
-    expect(result.relationships.length).toBeGreaterThan(0);
+    expect(result.elements[0].relationships?.length).toBeGreaterThan(0);
   });
 
   it('caches results for the same image', async () => {
@@ -66,10 +69,10 @@ describe('VLMService Integration', () => {
   it('evicts oldest entry when cache exceeds max size', async () => {
     // Fill cache to max size
     for (let i = 0; i < 50; i++) {
-      GEMINI_CACHE.set(`key${i}`, { elements: [], relationships: [] });
+      GEMINI_CACHE.set(`key${i}`, { elements: [] });
     }
     // Add one more entry (should evict key0)
-    GEMINI_CACHE.set('overflow', { elements: [], relationships: [] });
+    GEMINI_CACHE.set('overflow', { elements: [] });
     if (GEMINI_CACHE.size > 50) {
       const firstKey = GEMINI_CACHE.keys().next().value;
       if (typeof firstKey === 'string') {
