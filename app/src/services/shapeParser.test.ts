@@ -40,7 +40,7 @@ describe('parseShapesFromVLMResponse', () => {
     expect(compositionDescription).toBe('A box next to a circle');
     expect(shapes.map(s => s.type)).toEqual(['rectangle', 'circle', 'text', 'arrow']);
     expect(shapes[0].boundingBox).toEqual({ x: 0, y: 0, width: 100, height: 50 });
-    expect(shapes[0].style).toEqual({ color: 'red', lineStyle: 'dashed' }); // fill 'none' is dropped
+    expect(shapes[0].style).toEqual({ color: '#ff0000', lineStyle: 'dashed' }); // name -> hex; fill 'none' is dropped
     expect((shapes[2] as TextShape).text).toBe('Label');
 
     expect(relationships).toEqual(expect.arrayContaining([

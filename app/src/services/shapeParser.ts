@@ -7,6 +7,7 @@ import type {
   ElementStyleProps
 } from './shapeModels';
 import type { VLMServiceResponse, DiagramElement } from './vlmService';
+import { toHexColor } from './colors';
 
 // Helper function to generate unique relationship IDs
 let relIdCounter = 0;
@@ -97,8 +98,11 @@ export function parseShapesFromVLMResponse(response: VLMServiceResponse): {
     // Map style_info to the simple Style object
     const style: ElementStyleProps = {}; // Use ElementStyleProps type
     if (el.style_info) {
-      if (el.style_info.color && el.style_info.color !== 'unknown') style.color = el.style_info.color;
-      if (el.style_info.fill && el.style_info.fill !== 'none') style.fill = el.style_info.fill;
+      // drawio needs a colour it can read; "unknown", "none" and unreadable names map to undefined
+      const color = toHexColor(el.style_info.color);
+      const fill = el.style_info.fill === 'none' ? undefined : toHexColor(el.style_info.fill);
+      if (color) style.color = color;
+      if (fill) style.fill = fill;
       // Map line style - add more mappings if needed
       if (el.style_info.line_style === 'dashed') style.lineStyle = 'dashed';
       else if (el.style_info.line_style === 'dotted') style.lineStyle = 'dotted';
