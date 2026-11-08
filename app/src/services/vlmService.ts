@@ -580,9 +580,10 @@ class ClaudeAdapter implements VLMService {
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
         const msg = await anthropic.messages.create({
-          model: 'claude-3-opus-20240229',
-          max_tokens: 4096,
-          temperature: 0,
+          // Thinking is always on for this model (it shares max_tokens with the answer);
+          // sampling parameters such as temperature are rejected with a 400.
+          model: 'claude-opus-5-5',
+          max_tokens: 16000,
           system: 'You are an expert visual analysis assistant.',
           messages: [
             {
@@ -601,9 +602,18 @@ class ClaudeAdapter implements VLMService {
             },
           ],
         });
-        const firstBlock = msg.content?.[0];
-        // Only use .text if it exists on the block
-        const text = (firstBlock && typeof firstBlock === 'object' && 'text' in firstBlock && typeof firstBlock.text === 'string') ? firstBlock.text : '';
+        // 'refusal' is newer than the SDK's stop_reason type
+        if ((msg.stop_reason as string) === 'refusal') {
+          throw new GeneralAPIError('Claude declined to analyze this image.');
+        }
+        if (msg.stop_reason === 'max_tokens') {
+          throw new GeneralAPIError('Claude response was cut off (max_tokens reached).');
+        }
+        // The answer follows any thinking blocks, so pick the text block rather than content[0]
+        const text = msg.content
+          .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+          .map(block => block.text)
+          .join('');
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new GeneralAPIError('No JSON found in Claude response.');
         const parsed = JSON.parse(jsonMatch[0]);

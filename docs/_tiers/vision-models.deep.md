@@ -8,7 +8,7 @@ a third server.
 | Model in the list | API model | Notes |
 |---|---|---|
 | Google Gemini Pro Vision | `gemini-1.5-flash` | REST call; answers cached per image (see below) |
-| Anthropic Claude | `claude-3-opus-20240229` | Anthropic SDK, `temperature: 0`, up to 4096 output tokens |
+| Anthropic Claude | `claude-opus-5-5` | Anthropic SDK, up to 16000 output tokens (thinking is always on and shares that budget) |
 | OpenAI GPT-4o | `gpt-4o` | OpenAI SDK, `temperature: 0.2`, up to 4096 output tokens |
 
 The model IDs are set in `app/src/services/vlmService.ts`.
@@ -83,7 +83,9 @@ answers HTTP 5xx. Other errors end the attempt at once and are shown as:
 | Network failure (offline, blocked) | *Failed to fetch* |
 
 **Claude and GPT-4o** show the error message of the provider's SDK as is (for example
-*401 invalid x-api-key*) and do not retry.
+*401 invalid x-api-key*) and do not retry. Claude additionally reports *Claude declined to
+analyze this image.* when the model refuses, and *Claude response was cut off* when the
+answer hits the output limit.
 
 ## Caching (Gemini)
 
