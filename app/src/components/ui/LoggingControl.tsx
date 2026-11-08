@@ -16,37 +16,18 @@ interface LoggingControlProps {
   onClose: () => void;
 }
 
-export const LoggingControl: React.FC<LoggingControlProps> = ({ isOpen, onClose }) => {
-  // Local state for UI (initialized lazily on first render)
+// The panel mounts only while the modal is open, so its state is read fresh from the
+// Logger on every open - no effect is needed to sync it.
+export const LoggingControl: React.FC<LoggingControlProps> = ({ isOpen, onClose }) =>
+  isOpen ? <LoggingPanel onClose={onClose} /> : null;
+
+const LoggingPanel: React.FC<Pick<LoggingControlProps, 'onClose'>> = ({ onClose }) => {
+  // Local state for UI, initialized from the Logger when the panel mounts
   const [activeLevels, setActiveLevels] = useState<Set<string>>(() => Logger.getActiveLevels());
   const [activeCategories, setActiveCategories] = useState<Set<string>>(() => Logger.getActiveCategories());
 
-  // Helper function to compare Sets
-  const setsEqual = (a: Set<string>, b: Set<string>): boolean => {
-    if (a.size !== b.size) return false;
-    for (const item of a) {
-      if (!b.has(item)) return false;
-    }
-    return true;
-  };
-
-  // Sync local state with Logger when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      // Modal just opened - refresh from Logger
-      const currentLevels = Logger.getActiveLevels();
-      const currentCategories = Logger.getActiveCategories();
-
-      // Only update if different to avoid unnecessary renders
-      setActiveLevels((prev) => (setsEqual(prev, currentLevels) ? prev : currentLevels));
-      setActiveCategories((prev) => (setsEqual(prev, currentCategories) ? prev : currentCategories));
-    }
-  }, [isOpen]);
-
   // Handle keyboard shortcuts
   useEffect(() => {
-    if (!isOpen) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -56,7 +37,7 @@ export const LoggingControl: React.FC<LoggingControlProps> = ({ isOpen, onClose 
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [onClose]);
 
   // Helper function to get level colors
   const getLevelColor = (level: string) => {
@@ -144,8 +125,6 @@ export const LoggingControl: React.FC<LoggingControlProps> = ({ isOpen, onClose 
     setActiveCategories(noCategories);
     Logger.setActiveCategories(noCategories);
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
