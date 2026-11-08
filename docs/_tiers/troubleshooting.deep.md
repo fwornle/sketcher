@@ -1,7 +1,7 @@
 ## Turn on detailed logs first
 
 Most problems are easier to see in the browser console. Open the
-[logging dialog](settings.md#logging) (document icon), enable `DEBUG` for `VLM`, `PARSER`
+[Logging tab](settings.md#logging) in Settings (gear icon), enable `DEBUG` for `VLM`, `PARSER`
 and `DIAGRAM`, open the developer tools (F12, or Cmd+Option+I on macOS) and repeat the action.
 
 ## API key problems

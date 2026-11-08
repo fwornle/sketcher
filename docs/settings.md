@@ -1,22 +1,22 @@
 # Settings & Logging
 
-Theme, default model, API keys, and what the app writes to the browser console.
+Theme, API keys, and what the app writes to the browser console.
 
 === "⚡ Quick (~2 min)"
 
     ## Where things are
 
-    The three icons at the top right:
+    The two icons at the top right:
 
-    | Icon | Opens |
+    | Icon | Does |
     |---|---|
-    | ☀ / ☾ | Switches between light and dark theme |
-    | 📄 | **Logging Configuration**: which log levels and categories reach the console |
-    | ⚙ | **Settings**: theme, default model, export format, API keys |
+    | ☀ / ☾ / 🖥 | Cycles the theme: Light → Dark → System (follows the operating system) |
+    | ⚙ | **Settings**: the **API Keys** tab, and the **Logging** tab for what reaches the console |
 
-    ![Settings, General tab](images/ui-settings-general.png){ .screenshot }
+    ![Settings, API Keys tab](images/ui-settings-api-keys.png){ .screenshot }
 
-    Changes in Settings apply when you click **Save Changes**; **Cancel** discards them.
+    API keys are stored when you click **Save Changes**; **Cancel** discards them. Logging
+    changes apply as soon as you tick a box.
 
 === "📚 Deep Dive (full)"
 

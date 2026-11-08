@@ -19,7 +19,7 @@ app/src/
 ├── components/
 │   ├── Layout.tsx          # App shell: TopBar + SidebarMenu + <Outlet/> + BottomBar
 │   ├── layout/             # TopBar, BottomBar, SidebarMenu, AppLogo
-│   ├── settings/           # SettingsModal (theme, vision model, export format, API keys)
+│   ├── settings/           # SettingsModal (API keys and logging tabs)
 │   └── ui/                 # LoggingControl
 ├── features/sketch/        # The sketch-to-diagram feature
 │   ├── sketchSlice.ts      # State + analyzeSketch thunk + selectors (draw.io XML)

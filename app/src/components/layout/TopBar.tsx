@@ -1,19 +1,26 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react';
-import { Menu, X, Settings, FileText, Sun, Moon } from 'lucide-react';
+import { Menu, X, Settings, Sun, Moon, Monitor } from 'lucide-react';
 import { SettingsModal } from '../settings/SettingsModal';
-import { LoggingControl } from '../ui/LoggingControl';
 import { AppLogo } from './AppLogo';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { updatePreferences } from '@/store/slices/preferencesSlice';
 import { cn } from '@/lib/utils';
+import type { ThemePreference } from '@/services/storage';
 
 interface TopBarProps {
   className?: string;
   appName?: string;
   navigation?: Array<{ name: string; href: string }>;
 }
+
+// The theme button cycles through these; 'system' follows the operating system
+const THEME_CYCLE: Record<ThemePreference, { next: ThemePreference; label: string; Icon: typeof Sun }> = {
+  light: { next: 'dark', label: 'Light', Icon: Sun },
+  dark: { next: 'system', label: 'Dark', Icon: Moon },
+  system: { next: 'light', label: 'System', Icon: Monitor },
+};
 
 const iconButtonClass =
   'rounded-full bg-primary-800 dark:bg-primary-900 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-800';
@@ -27,19 +34,14 @@ export function TopBar({
   ],
 }: TopBarProps) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showLoggingControl, setShowLoggingControl] = useState(false);
 
   const dispatch = useAppDispatch();
   const theme = useAppSelector(state => state.preferences.theme) || 'system';
 
-  // Resolve 'system' to the actually applied theme
-  const appliedTheme =
-    theme === 'system'
-      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : theme;
+  const { next, label: themeLabel, Icon: ThemeIcon } = THEME_CYCLE[theme];
 
-  const toggleTheme = () => {
-    dispatch(updatePreferences({ theme: appliedTheme === 'dark' ? 'light' : 'dark' }));
+  const cycleTheme = () => {
+    dispatch(updatePreferences({ theme: next }));
   };
 
   return (
@@ -95,28 +97,18 @@ export function TopBar({
                   <button
                     type="button"
                     className={iconButtonClass}
-                    onClick={toggleTheme}
-                    title={`Current: ${appliedTheme}. Click to toggle.`}
+                    onClick={cycleTheme}
+                    title={`Theme: ${themeLabel}. Click for ${THEME_CYCLE[next].label}.`}
                   >
-                    <span className="sr-only">Toggle theme</span>
-                    {appliedTheme === 'dark' ? <Moon className="h-6 w-6" /> : <Sun className="h-6 w-6" />}
-                  </button>
-
-                  <button
-                    type="button"
-                    className={iconButtonClass}
-                    onClick={() => setShowLoggingControl(true)}
-                    title="Logging Configuration"
-                  >
-                    <span className="sr-only">Open logging configuration</span>
-                    <FileText className="h-6 w-6" />
+                    <span className="sr-only">Change theme</span>
+                    <ThemeIcon className="h-6 w-6" />
                   </button>
 
                   <button
                     type="button"
                     className={iconButtonClass}
                     onClick={() => setShowSettingsModal(true)}
-                    title="Settings & API keys"
+                    title="Settings: API keys and logging"
                   >
                     <span className="sr-only">Open settings</span>
                     <Settings className="h-6 w-6" />
@@ -146,11 +138,6 @@ export function TopBar({
       <SettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
-      />
-
-      <LoggingControl
-        isOpen={showLoggingControl}
-        onClose={() => setShowLoggingControl(false)}
       />
     </>
   );

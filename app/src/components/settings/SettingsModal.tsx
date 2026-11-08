@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { X, Check, Eye, EyeOff } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { updatePreferences } from '@/store/slices/preferencesSlice';
-import type { ApiKeyField, ExportFormat, Preferences, ThemePreference } from '@/services/storage';
-import { VLM_PROVIDERS, DEFAULT_VLM } from '@/features/sketch/vlmProviders';
+import type { ApiKeyField, Preferences } from '@/services/storage';
+import { VLM_PROVIDERS } from '@/features/sketch/vlmProviders';
+import { LoggingControl } from '@/components/ui/LoggingControl';
 import { cn } from '@/lib/utils';
 
 interface SettingsModalProps {
@@ -11,7 +12,9 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-type Tab = 'general' | 'apiKeys';
+type Tab = 'apiKeys' | 'logging';
+
+const TABS: ReadonlyArray<readonly [Tab, string]> = [['apiKeys', 'API Keys'], ['logging', 'Logging']];
 
 /** API key fields shown in the settings, in display order; providers sharing a key get one field. */
 const API_KEY_FIELDS: Array<{ field: ApiKeyField; label: string; hint: string }> = [
@@ -38,7 +41,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 function SettingsDialog({ onClose }: { onClose: () => void }) {
   const dispatch = useAppDispatch();
   const preferences = useAppSelector(state => state.preferences);
-  const [activeTab, setActiveTab] = useState<Tab>('general');
+  const [activeTab, setActiveTab] = useState<Tab>('apiKeys');
   const [draft, setDraft] = useState<Preferences>(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isLoaded: _, ...prefs } = preferences;
@@ -93,14 +96,10 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose, handleSave]);
 
-  const theme = draft.theme || 'system';
-  const exportFormat = draft.exportFormat || 'drawio';
-  const selectedVlm = draft.selectedVlm || DEFAULT_VLM;
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
-        className="bg-white dark:bg-primary-800 rounded-lg shadow-lg w-full max-w-lg max-h-[85vh] flex flex-col"
+        className="bg-white dark:bg-primary-800 rounded-lg shadow-lg w-full max-w-3xl max-h-[85vh] flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
@@ -119,7 +118,7 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
 
         {/* Tabs */}
         <div className="flex gap-1 px-4 pt-3 border-b border-gray-200 dark:border-primary-700" role="tablist">
-          {([['general', 'General'], ['apiKeys', 'API Keys']] as const).map(([key, label]) => (
+          {TABS.map(([key, label]) => (
             <button
               key={key}
               role="tab"
@@ -139,62 +138,6 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
 
         {/* Content */}
         <div className="p-4 space-y-5 overflow-y-auto">
-          {activeTab === 'general' && (
-            <>
-              <div>
-                <span className={labelClass}>Theme</span>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['light', 'dark', 'system'] as ThemePreference[]).map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => setField('theme', option)}
-                      className={cn(
-                        'px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                        theme === option
-                          ? 'bg-accent-600 text-white'
-                          : 'bg-gray-100 dark:bg-primary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-primary-600',
-                      )}
-                    >
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                    </button>
-                  ))}
-                </div>
-                <p className={hintClass}>System will match your device settings.</p>
-              </div>
-
-              <div>
-                <label htmlFor="settings-vlm" className={labelClass}>Vision model</label>
-                <select
-                  id="settings-vlm"
-                  value={selectedVlm}
-                  onChange={(e) => setField('selectedVlm', e.target.value)}
-                  className={inputClass}
-                >
-                  {VLM_PROVIDERS.map(p => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}{p.implemented ? '' : ' (not yet supported)'}
-                    </option>
-                  ))}
-                </select>
-                <p className={hintClass}>Model used to analyze uploaded sketches.</p>
-              </div>
-
-              <div>
-                <label htmlFor="settings-export" className={labelClass}>Default export format</label>
-                <select
-                  id="settings-export"
-                  value={exportFormat}
-                  onChange={(e) => setField('exportFormat', e.target.value as ExportFormat)}
-                  className={inputClass}
-                >
-                  <option value="drawio">drawio</option>
-                  <option value="svg">SVG</option>
-                  <option value="png">PNG</option>
-                </select>
-              </div>
-            </>
-          )}
-
           {activeTab === 'apiKeys' && (
             <>
               <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -228,6 +171,15 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
                     : <p className={hintClass}>{hint}</p>}
                 </div>
               ))}
+            </>
+          )}
+
+          {activeTab === 'logging' && (
+            <>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Controls what the app writes to the browser console. Changes apply immediately.
+              </p>
+              <LoggingControl />
             </>
           )}
 
