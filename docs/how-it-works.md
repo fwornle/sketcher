@@ -127,9 +127,9 @@ Anything skipped is listed as a warning in the result panel.
 </div>
 <figure class="overview-figure" markdown="1">
 
-[![The analysis result panel](images/ui-analysis-result.png)](images/ui-analysis-result.png){: target="_blank" rel="noopener" title="Open full-size screenshot" }
+[![A real run with Claude Opus 5.5: composition, 8 shapes and 18 relationships, and the diagram](images/ui-sample-sketch-result.png)](images/ui-sample-sketch-result.png){: target="_blank" rel="noopener" title="Open full-size screenshot" }
 
-<figcaption>Shape and relationship counts, the raw answer, and the download.</figcaption>
+<figcaption>A real run: 8 shapes and 18 relationships parsed from Claude Opus 5.5's answer.</figcaption>
 </figure>
 <p class="overview-takeaway">A partly broken answer still gives a diagram, with the gaps named.</p>
 </section>

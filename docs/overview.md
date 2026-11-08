@@ -97,9 +97,9 @@ Line colour, solid / dashed / dotted lines and fills carry over. Colour names su
 </div>
 <figure class="overview-figure" markdown="1">
 
-[![The generated diagram opened in draw.io](images/diagram-sample-house.png)](images/diagram-sample-house.png){: target="_blank" rel="noopener" title="Open full-size image" }
+[![A real run with Claude Opus 5.5 on the sample sketch: body, roof, chimney, window, door, sun and the Home label as draw.io shapes](images/ui-sample-sketch-result.png)](images/ui-sample-sketch-result.png){: target="_blank" rel="noopener" title="Open full-size screenshot" }
 
-<figcaption>Each shape lands where it was on the photo, scaled to a draw.io page.</figcaption>
+<figcaption>A real run with Claude Opus 5.5: each shape where it was, in its colour.</figcaption>
 </figure>
 <p class="overview-takeaway">The model reads the sketch; Sketcher turns its answer into draw.io shapes.</p>
 </section>
