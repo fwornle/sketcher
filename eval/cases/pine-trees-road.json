@@ -1,0 +1,209 @@
+{
+  "id": "pine-trees-road",
+  "title": "Pine trees beside a winding road",
+  "image": "pine-trees-road.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "tree",
+    "road",
+    "path"
+  ],
+  "notes": "The case that failed before pictogram support: every tree came back as a rectangle.",
+  "elements": [
+    {
+      "label": "road left edge",
+      "type": "polyline",
+      "accept": [
+        "polyline"
+      ],
+      "bbox": [
+        380,
+        240,
+        640,
+        635
+      ]
+    },
+    {
+      "label": "road right edge",
+      "type": "polyline",
+      "accept": [
+        "polyline"
+      ],
+      "bbox": [
+        540,
+        240,
+        690,
+        635
+      ]
+    },
+    {
+      "label": "tree top tier",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        114,
+        120,
+        226,
+        208
+      ]
+    },
+    {
+      "label": "tree lower tier",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        90,
+        176,
+        250,
+        272
+      ]
+    },
+    {
+      "label": "tree trunk",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        157,
+        272,
+        183,
+        312
+      ]
+    },
+    {
+      "label": "tree top tier",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        255,
+        300,
+        346,
+        372
+      ]
+    },
+    {
+      "label": "tree lower tier",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        235,
+        346,
+        365,
+        424
+      ]
+    },
+    {
+      "label": "tree trunk",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        290,
+        424,
+        310,
+        456
+      ]
+    },
+    {
+      "label": "tree top tier",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        748,
+        150,
+        853,
+        233
+      ]
+    },
+    {
+      "label": "tree lower tier",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        725,
+        203,
+        875,
+        293
+      ]
+    },
+    {
+      "label": "tree trunk",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        788,
+        293,
+        812,
+        330
+      ]
+    },
+    {
+      "label": "tree top tier",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        822,
+        390,
+        899,
+        451
+      ]
+    },
+    {
+      "label": "tree lower tier",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        805,
+        429,
+        915,
+        495
+      ]
+    },
+    {
+      "label": "tree trunk",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        851,
+        495,
+        869,
+        522
+      ]
+    }
+  ]
+}

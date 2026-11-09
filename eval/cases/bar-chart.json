@@ -1,0 +1,187 @@
+{
+  "id": "bar-chart",
+  "title": "Quarterly bar chart",
+  "image": "bar-chart.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "bar",
+    "chart",
+    "graph",
+    "sales"
+  ],
+  "elements": [
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        400,
+        30,
+        520,
+        60
+      ],
+      "text": "SALES"
+    },
+    {
+      "label": "y axis",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        91,
+        80,
+        109,
+        560
+      ],
+      "points": [
+        [
+          100,
+          560
+        ],
+        [
+          100,
+          80
+        ]
+      ]
+    },
+    {
+      "label": "x axis",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        100,
+        551,
+        880,
+        569
+      ],
+      "points": [
+        [
+          100,
+          560
+        ],
+        [
+          880,
+          560
+        ]
+      ]
+    },
+    {
+      "label": "bar Q1",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        170,
+        400,
+        270,
+        560
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        202,
+        578,
+        238,
+        602
+      ],
+      "text": "Q1"
+    },
+    {
+      "label": "bar Q2",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        330,
+        250,
+        430,
+        560
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        362,
+        578,
+        398,
+        602
+      ],
+      "text": "Q2"
+    },
+    {
+      "label": "bar Q3",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        490,
+        330,
+        590,
+        560
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        522,
+        578,
+        558,
+        602
+      ],
+      "text": "Q3"
+    },
+    {
+      "label": "bar Q4",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        650,
+        180,
+        750,
+        560
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        682,
+        578,
+        718,
+        602
+      ],
+      "text": "Q4"
+    }
+  ]
+}

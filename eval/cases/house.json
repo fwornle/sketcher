@@ -1,0 +1,325 @@
+{
+  "id": "house",
+  "title": "House with sun",
+  "image": "house.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "house",
+    "home"
+  ],
+  "elements": [
+    {
+      "label": "house body",
+      "type": "square",
+      "accept": [
+        "square",
+        "rectangle"
+      ],
+      "bbox": [
+        300,
+        300,
+        560,
+        560
+      ]
+    },
+    {
+      "label": "roof",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        270,
+        150,
+        590,
+        300
+      ]
+    },
+    {
+      "label": "chimney",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        505,
+        185,
+        540,
+        245
+      ]
+    },
+    {
+      "label": "door",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        400,
+        460,
+        460,
+        560
+      ]
+    },
+    {
+      "label": "left window",
+      "type": "square",
+      "accept": [
+        "square",
+        "rectangle"
+      ],
+      "bbox": [
+        330,
+        340,
+        380,
+        390
+      ]
+    },
+    {
+      "label": "right window",
+      "type": "square",
+      "accept": [
+        "square",
+        "rectangle"
+      ],
+      "bbox": [
+        480,
+        340,
+        530,
+        390
+      ]
+    },
+    {
+      "label": "sun",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        740,
+        90,
+        840,
+        190
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        853,
+        153,
+        880,
+        158
+      ],
+      "points": [
+        [
+          853,
+          153
+        ],
+        [
+          880,
+          158
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        825,
+        193,
+        841,
+        217
+      ],
+      "points": [
+        [
+          825,
+          193
+        ],
+        [
+          841,
+          217
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        772,
+        203,
+        777,
+        230
+      ],
+      "points": [
+        [
+          777,
+          203
+        ],
+        [
+          772,
+          230
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        713,
+        175,
+        737,
+        191
+      ],
+      "points": [
+        [
+          737,
+          175
+        ],
+        [
+          713,
+          191
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        700,
+        122,
+        727,
+        127
+      ],
+      "points": [
+        [
+          727,
+          127
+        ],
+        [
+          700,
+          122
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        739,
+        63,
+        755,
+        87
+      ],
+      "points": [
+        [
+          755,
+          87
+        ],
+        [
+          739,
+          63
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        803,
+        50,
+        808,
+        77
+      ],
+      "points": [
+        [
+          803,
+          77
+        ],
+        [
+          808,
+          50
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        843,
+        89,
+        867,
+        105
+      ],
+      "points": [
+        [
+          843,
+          105
+        ],
+        [
+          867,
+          89
+        ]
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        370,
+        590,
+        465,
+        620
+      ],
+      "text": "HOME"
+    }
+  ]
+}

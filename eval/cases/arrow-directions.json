@@ -1,0 +1,128 @@
+{
+  "id": "arrow-directions",
+  "title": "Arrows in five directions",
+  "image": "arrow-directions.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "arrow"
+  ],
+  "notes": "Scores arrow direction: the head must end up where it is drawn.",
+  "elements": [
+    {
+      "label": "right",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        100,
+        111,
+        330,
+        129
+      ],
+      "points": [
+        [
+          100,
+          120
+        ],
+        [
+          330,
+          120
+        ]
+      ]
+    },
+    {
+      "label": "left",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        620,
+        111,
+        850,
+        129
+      ],
+      "points": [
+        [
+          850,
+          120
+        ],
+        [
+          620,
+          120
+        ]
+      ]
+    },
+    {
+      "label": "down",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        191,
+        250,
+        209,
+        520
+      ],
+      "points": [
+        [
+          200,
+          250
+        ],
+        [
+          200,
+          520
+        ]
+      ]
+    },
+    {
+      "label": "up",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        471,
+        280,
+        489,
+        560
+      ],
+      "points": [
+        [
+          480,
+          560
+        ],
+        [
+          480,
+          280
+        ]
+      ]
+    },
+    {
+      "label": "up-right",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        620,
+        300,
+        860,
+        560
+      ],
+      "points": [
+        [
+          620,
+          560
+        ],
+        [
+          860,
+          300
+        ]
+      ]
+    }
+  ]
+}

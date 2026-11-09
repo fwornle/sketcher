@@ -1,0 +1,182 @@
+{
+  "id": "stick-figure",
+  "title": "Stick figure saying hi",
+  "image": "stick-figure.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "person",
+    "figure",
+    "man",
+    "human"
+  ],
+  "elements": [
+    {
+      "label": "head",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        435,
+        105,
+        525,
+        195
+      ]
+    },
+    {
+      "label": "body",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        480,
+        195,
+        480,
+        380
+      ],
+      "points": [
+        [
+          480,
+          195
+        ],
+        [
+          480,
+          380
+        ]
+      ]
+    },
+    {
+      "label": "left arm",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        390,
+        250,
+        480,
+        310
+      ],
+      "points": [
+        [
+          480,
+          250
+        ],
+        [
+          390,
+          310
+        ]
+      ]
+    },
+    {
+      "label": "right arm",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        480,
+        250,
+        570,
+        300
+      ],
+      "points": [
+        [
+          480,
+          250
+        ],
+        [
+          570,
+          300
+        ]
+      ]
+    },
+    {
+      "label": "left leg",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        410,
+        380,
+        480,
+        520
+      ],
+      "points": [
+        [
+          480,
+          380
+        ],
+        [
+          410,
+          520
+        ]
+      ]
+    },
+    {
+      "label": "right leg",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        480,
+        380,
+        550,
+        520
+      ],
+      "points": [
+        [
+          480,
+          380
+        ],
+        [
+          550,
+          520
+        ]
+      ]
+    },
+    {
+      "label": "speech bubble",
+      "type": "ellipse",
+      "accept": [
+        "ellipse",
+        "circle"
+      ],
+      "bbox": [
+        560,
+        63,
+        720,
+        153
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        598,
+        90,
+        682,
+        126
+      ],
+      "text": "HI!"
+    }
+  ]
+}

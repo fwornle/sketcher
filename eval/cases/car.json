@@ -1,0 +1,84 @@
+{
+  "id": "car",
+  "title": "Side view of a car",
+  "image": "car.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "car",
+    "vehicle",
+    "automobile"
+  ],
+  "elements": [
+    {
+      "label": "car body",
+      "type": "polygon",
+      "accept": [
+        "polygon",
+        "polyline"
+      ],
+      "bbox": [
+        150,
+        250,
+        820,
+        420
+      ]
+    },
+    {
+      "label": "front window",
+      "type": "trapezoid",
+      "accept": [
+        "trapezoid",
+        "polygon"
+      ],
+      "bbox": [
+        325,
+        270,
+        480,
+        325
+      ]
+    },
+    {
+      "label": "rear window",
+      "type": "trapezoid",
+      "accept": [
+        "trapezoid",
+        "polygon"
+      ],
+      "bbox": [
+        500,
+        270,
+        655,
+        325
+      ]
+    },
+    {
+      "label": "front wheel",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        225,
+        375,
+        335,
+        485
+      ]
+    },
+    {
+      "label": "rear wheel",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        645,
+        375,
+        755,
+        485
+      ]
+    }
+  ]
+}

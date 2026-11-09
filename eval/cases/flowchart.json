@@ -1,0 +1,209 @@
+{
+  "id": "flowchart",
+  "title": "Flowchart with a decision",
+  "image": "flowchart.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "flow",
+    "process",
+    "decision"
+  ],
+  "elements": [
+    {
+      "label": "start terminator",
+      "type": "ellipse",
+      "accept": [
+        "ellipse",
+        "circle"
+      ],
+      "bbox": [
+        35,
+        270,
+        225,
+        370
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        82,
+        308,
+        178,
+        332
+      ],
+      "text": "START"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        230,
+        311,
+        322,
+        329
+      ],
+      "points": [
+        [
+          230,
+          320
+        ],
+        [
+          322,
+          320
+        ]
+      ]
+    },
+    {
+      "label": "load step",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        330,
+        270,
+        490,
+        370
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        369,
+        307,
+        451,
+        333
+      ],
+      "text": "LOAD"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        495,
+        311,
+        582,
+        329
+      ],
+      "points": [
+        [
+          495,
+          320
+        ],
+        [
+          582,
+          320
+        ]
+      ]
+    },
+    {
+      "label": "decision",
+      "type": "rhombus",
+      "accept": [
+        "rhombus",
+        "polygon"
+      ],
+      "bbox": [
+        590,
+        250,
+        770,
+        390
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        650,
+        307,
+        710,
+        333
+      ],
+      "text": "OK?"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        671,
+        395,
+        689,
+        482
+      ],
+      "points": [
+        [
+          680,
+          395
+        ],
+        [
+          680,
+          482
+        ]
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        696,
+        424,
+        747,
+        446
+      ],
+      "text": "YES"
+    },
+    {
+      "label": "save step",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        600,
+        490,
+        760,
+        580
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        639,
+        522,
+        721,
+        548
+      ],
+      "text": "SAVE"
+    }
+  ]
+}

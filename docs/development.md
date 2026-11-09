@@ -1,6 +1,6 @@
 # Development
 
-Run the tests, add a model, build these docs.
+Run the tests, evaluate the prompt, add a model, build these docs.
 
 === "⚡ Quick (~2 min)"
 
@@ -12,6 +12,8 @@ Run the tests, add a model, build these docs.
     npm run lint --prefix app      # ESLint
     npm run typecheck --prefix app # TypeScript, no output
     npm run build                  # production bundle → app/dist/
+    npm run eval:check             # eval cases and scorer, no API calls
+    npm run eval                   # score every model that has an API key
     ```
 
     Docs preview: `pip install "mkdocs<2" mkdocs-material mkdocs-minify-plugin`, then

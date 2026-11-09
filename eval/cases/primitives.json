@@ -1,0 +1,125 @@
+{
+  "id": "primitives",
+  "title": "Eight geometric primitives",
+  "image": "primitives.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "shape",
+    "geometric"
+  ],
+  "elements": [
+    {
+      "label": "circle",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        50,
+        90,
+        210,
+        250
+      ]
+    },
+    {
+      "label": "ellipse",
+      "type": "ellipse",
+      "accept": [
+        "ellipse",
+        "circle"
+      ],
+      "bbox": [
+        240,
+        105,
+        460,
+        235
+      ]
+    },
+    {
+      "label": "triangle",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        505,
+        90,
+        675,
+        250
+      ]
+    },
+    {
+      "label": "rhombus",
+      "type": "rhombus",
+      "accept": [
+        "rhombus",
+        "polygon"
+      ],
+      "bbox": [
+        735,
+        85,
+        905,
+        255
+      ]
+    },
+    {
+      "label": "rectangle",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        40,
+        400,
+        240,
+        520
+      ]
+    },
+    {
+      "label": "square",
+      "type": "square",
+      "accept": [
+        "square",
+        "rectangle"
+      ],
+      "bbox": [
+        300,
+        400,
+        420,
+        520
+      ]
+    },
+    {
+      "label": "parallelogram",
+      "type": "parallelogram",
+      "accept": [
+        "parallelogram",
+        "polygon"
+      ],
+      "bbox": [
+        480,
+        400,
+        700,
+        520
+      ]
+    },
+    {
+      "label": "trapezoid",
+      "type": "trapezoid",
+      "accept": [
+        "trapezoid",
+        "polygon"
+      ],
+      "bbox": [
+        740,
+        400,
+        930,
+        520
+      ]
+    }
+  ]
+}

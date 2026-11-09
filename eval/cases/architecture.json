@@ -1,0 +1,234 @@
+{
+  "id": "architecture",
+  "title": "Web, API, cache and database",
+  "image": "architecture.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "architecture",
+    "system",
+    "api",
+    "database",
+    "service"
+  ],
+  "elements": [
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        115,
+        40,
+        211,
+        64
+      ],
+      "text": "USERS"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        161,
+        72,
+        179,
+        114
+      ],
+      "points": [
+        [
+          170,
+          72
+        ],
+        [
+          170,
+          114
+        ]
+      ]
+    },
+    {
+      "label": "web box",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        80,
+        120,
+        260,
+        220
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        137,
+        156,
+        203,
+        184
+      ],
+      "text": "WEB"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        265,
+        161,
+        385,
+        179
+      ],
+      "points": [
+        [
+          265,
+          170
+        ],
+        [
+          385,
+          170
+        ]
+      ]
+    },
+    {
+      "label": "api box",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        390,
+        120,
+        570,
+        220
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        447,
+        156,
+        513,
+        184
+      ],
+      "text": "API"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        575,
+        161,
+        715,
+        179
+      ],
+      "points": [
+        [
+          575,
+          170
+        ],
+        [
+          715,
+          170
+        ]
+      ]
+    },
+    {
+      "label": "db box",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        720,
+        120,
+        900,
+        220
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        789,
+        156,
+        831,
+        184
+      ],
+      "text": "DB"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        471,
+        225,
+        489,
+        395
+      ],
+      "points": [
+        [
+          480,
+          225
+        ],
+        [
+          480,
+          395
+        ]
+      ]
+    },
+    {
+      "label": "cache box",
+      "type": "rectangle",
+      "accept": [
+        "rectangle",
+        "square"
+      ],
+      "bbox": [
+        390,
+        400,
+        570,
+        500
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        428,
+        437,
+        532,
+        463
+      ],
+      "text": "CACHE"
+    }
+  ]
+}

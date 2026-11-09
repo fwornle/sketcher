@@ -1,0 +1,56 @@
+{
+  "id": "star-arrow-hexagon",
+  "title": "Star, block arrow and hexagon",
+  "image": "star-arrow-hexagon.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "star",
+    "arrow",
+    "hexagon"
+  ],
+  "elements": [
+    {
+      "label": "star",
+      "type": "polygon",
+      "accept": [
+        "polygon",
+        "polyline"
+      ],
+      "bbox": [
+        87,
+        190,
+        353,
+        443
+      ]
+    },
+    {
+      "label": "block arrow",
+      "type": "polygon",
+      "accept": [
+        "polygon",
+        "polyline"
+      ],
+      "bbox": [
+        420,
+        210,
+        720,
+        430
+      ]
+    },
+    {
+      "label": "hexagon",
+      "type": "polygon",
+      "accept": [
+        "polygon",
+        "polyline"
+      ],
+      "bbox": [
+        750,
+        242,
+        930,
+        398
+      ]
+    }
+  ]
+}

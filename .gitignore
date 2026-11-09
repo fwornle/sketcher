@@ -63,3 +63,6 @@ site/
 # sketcher release packaging: the copied web app and packed tarballs
 cli/dist/
 release/
+
+# eval answers and reports (eval/run.mjs)
+eval/results/

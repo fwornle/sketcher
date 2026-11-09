@@ -1,0 +1,210 @@
+{
+  "id": "state-diagram",
+  "title": "Three-state machine",
+  "image": "state-diagram.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "state",
+    "diagram",
+    "transition",
+    "machine"
+  ],
+  "elements": [
+    {
+      "label": "state A",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        110,
+        260,
+        250,
+        400
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        168,
+        312,
+        192,
+        348
+      ],
+      "text": "A"
+    },
+    {
+      "label": "state B",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        410,
+        100,
+        550,
+        240
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        468,
+        152,
+        492,
+        188
+      ],
+      "text": "B"
+    },
+    {
+      "label": "state C",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        710,
+        260,
+        850,
+        400
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        768,
+        312,
+        792,
+        348
+      ],
+      "text": "C"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        240,
+        204,
+        415,
+        293
+      ],
+      "points": [
+        [
+          240,
+          293
+        ],
+        [
+          415,
+          205
+        ]
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        290,
+        205,
+        323,
+        227
+      ],
+      "text": "GO"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        545,
+        205,
+        720,
+        294
+      ],
+      "points": [
+        [
+          545,
+          205
+        ],
+        [
+          720,
+          293
+        ]
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        640,
+        205,
+        673,
+        227
+      ],
+      "text": "OK"
+    },
+    {
+      "label": "arrow",
+      "type": "arrow",
+      "accept": [
+        "arrow"
+      ],
+      "bbox": [
+        252,
+        336,
+        708,
+        354
+      ],
+      "points": [
+        [
+          708,
+          345
+        ],
+        [
+          252,
+          345
+        ]
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        435,
+        365,
+        505,
+        387
+      ],
+      "text": "BACK"
+    }
+  ]
+}

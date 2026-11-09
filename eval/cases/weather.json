@@ -1,0 +1,443 @@
+{
+  "id": "weather",
+  "title": "Rain cloud and sun",
+  "image": "weather.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "cloud",
+    "rain",
+    "sun",
+    "weather"
+  ],
+  "elements": [
+    {
+      "label": "cloud",
+      "type": "polygon",
+      "accept": [
+        "polygon",
+        "polyline"
+      ],
+      "bbox": [
+        233,
+        129,
+        615,
+        311
+      ]
+    },
+    {
+      "label": "sun",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        735,
+        95,
+        845,
+        205
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        858,
+        164,
+        885,
+        169
+      ],
+      "points": [
+        [
+          858,
+          164
+        ],
+        [
+          885,
+          169
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        828,
+        208,
+        844,
+        231
+      ],
+      "points": [
+        [
+          828,
+          208
+        ],
+        [
+          844,
+          231
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        771,
+        218,
+        776,
+        245
+      ],
+      "points": [
+        [
+          776,
+          218
+        ],
+        [
+          771,
+          245
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        709,
+        188,
+        732,
+        204
+      ],
+      "points": [
+        [
+          732,
+          188
+        ],
+        [
+          709,
+          204
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        695,
+        131,
+        722,
+        136
+      ],
+      "points": [
+        [
+          722,
+          136
+        ],
+        [
+          695,
+          131
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        736,
+        69,
+        752,
+        92
+      ],
+      "points": [
+        [
+          752,
+          92
+        ],
+        [
+          736,
+          69
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        804,
+        55,
+        809,
+        82
+      ],
+      "points": [
+        [
+          804,
+          82
+        ],
+        [
+          809,
+          55
+        ]
+      ]
+    },
+    {
+      "label": "sun ray",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        848,
+        96,
+        871,
+        112
+      ],
+      "points": [
+        [
+          848,
+          112
+        ],
+        [
+          871,
+          96
+        ]
+      ]
+    },
+    {
+      "label": "rain drop",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        310,
+        350,
+        322,
+        405
+      ],
+      "points": [
+        [
+          322,
+          350
+        ],
+        [
+          310,
+          405
+        ]
+      ]
+    },
+    {
+      "label": "rain drop",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        344,
+        375,
+        356,
+        430
+      ],
+      "points": [
+        [
+          356,
+          375
+        ],
+        [
+          344,
+          430
+        ]
+      ]
+    },
+    {
+      "label": "rain drop",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        378,
+        350,
+        390,
+        405
+      ],
+      "points": [
+        [
+          390,
+          350
+        ],
+        [
+          378,
+          405
+        ]
+      ]
+    },
+    {
+      "label": "rain drop",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        412,
+        375,
+        424,
+        430
+      ],
+      "points": [
+        [
+          424,
+          375
+        ],
+        [
+          412,
+          430
+        ]
+      ]
+    },
+    {
+      "label": "rain drop",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        446,
+        350,
+        458,
+        405
+      ],
+      "points": [
+        [
+          458,
+          350
+        ],
+        [
+          446,
+          405
+        ]
+      ]
+    },
+    {
+      "label": "rain drop",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        480,
+        375,
+        492,
+        430
+      ],
+      "points": [
+        [
+          492,
+          375
+        ],
+        [
+          480,
+          430
+        ]
+      ]
+    },
+    {
+      "label": "rain drop",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        514,
+        350,
+        526,
+        405
+      ],
+      "points": [
+        [
+          526,
+          350
+        ],
+        [
+          514,
+          405
+        ]
+      ]
+    },
+    {
+      "label": "rain drop",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        548,
+        375,
+        560,
+        430
+      ],
+      "points": [
+        [
+          560,
+          375
+        ],
+        [
+          548,
+          430
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,255 @@
+{
+  "id": "mind-map",
+  "title": "Mind map with four branches",
+  "image": "mind-map.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "mind map",
+    "idea",
+    "concept",
+    "brainstorm"
+  ],
+  "elements": [
+    {
+      "label": "central idea",
+      "type": "ellipse",
+      "accept": [
+        "ellipse",
+        "circle"
+      ],
+      "bbox": [
+        360,
+        260,
+        600,
+        380
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        433,
+        305,
+        528,
+        335
+      ],
+      "text": "IDEA"
+    },
+    {
+      "label": "plan node",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        115,
+        85,
+        225,
+        195
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        135,
+        129,
+        205,
+        151
+      ],
+      "text": "PLAN"
+    },
+    {
+      "label": "team node",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        735,
+        85,
+        845,
+        195
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        755,
+        129,
+        825,
+        151
+      ],
+      "text": "TEAM"
+    },
+    {
+      "label": "cost node",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        115,
+        445,
+        225,
+        555
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        135,
+        489,
+        205,
+        511
+      ],
+      "text": "COST"
+    },
+    {
+      "label": "time node",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        735,
+        445,
+        845,
+        555
+      ]
+    },
+    {
+      "label": "text",
+      "type": "text",
+      "accept": [
+        "text"
+      ],
+      "bbox": [
+        755,
+        489,
+        825,
+        511
+      ],
+      "text": "TIME"
+    },
+    {
+      "label": "line_segment",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        215,
+        172,
+        390,
+        285
+      ],
+      "points": [
+        [
+          390,
+          285
+        ],
+        [
+          215,
+          172
+        ]
+      ]
+    },
+    {
+      "label": "line_segment",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        570,
+        172,
+        745,
+        285
+      ],
+      "points": [
+        [
+          570,
+          285
+        ],
+        [
+          745,
+          172
+        ]
+      ]
+    },
+    {
+      "label": "line_segment",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        215,
+        355,
+        390,
+        468
+      ],
+      "points": [
+        [
+          390,
+          355
+        ],
+        [
+          215,
+          468
+        ]
+      ]
+    },
+    {
+      "label": "line_segment",
+      "type": "line_segment",
+      "accept": [
+        "line_segment",
+        "polyline",
+        "arrow"
+      ],
+      "bbox": [
+        570,
+        355,
+        745,
+        468
+      ],
+      "points": [
+        [
+          570,
+          355
+        ],
+        [
+          745,
+          468
+        ]
+      ]
+    }
+  ]
+}

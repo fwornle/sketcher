@@ -1,0 +1,108 @@
+{
+  "id": "mountain-river",
+  "title": "Mountains, river and birds",
+  "image": "mountain-river.png",
+  "width": 960,
+  "height": 640,
+  "keywords": [
+    "mountain",
+    "river",
+    "landscape"
+  ],
+  "elements": [
+    {
+      "label": "left mountain",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        60,
+        80,
+        440,
+        300
+      ]
+    },
+    {
+      "label": "right mountain",
+      "type": "triangle",
+      "accept": [
+        "triangle",
+        "polygon"
+      ],
+      "bbox": [
+        380,
+        130,
+        680,
+        300
+      ]
+    },
+    {
+      "label": "river bank",
+      "type": "polyline",
+      "accept": [
+        "polyline"
+      ],
+      "bbox": [
+        368,
+        300,
+        800,
+        600
+      ]
+    },
+    {
+      "label": "river bank",
+      "type": "polyline",
+      "accept": [
+        "polyline"
+      ],
+      "bbox": [
+        444,
+        300,
+        860,
+        545
+      ]
+    },
+    {
+      "label": "sun",
+      "type": "circle",
+      "accept": [
+        "circle",
+        "ellipse"
+      ],
+      "bbox": [
+        770,
+        70,
+        870,
+        170
+      ]
+    },
+    {
+      "label": "bird",
+      "type": "polyline",
+      "accept": [
+        "polyline"
+      ],
+      "bbox": [
+        640,
+        160,
+        676,
+        174
+      ]
+    },
+    {
+      "label": "bird",
+      "type": "polyline",
+      "accept": [
+        "polyline"
+      ],
+      "bbox": [
+        710,
+        200,
+        746,
+        214
+      ]
+    }
+  ]
+}
