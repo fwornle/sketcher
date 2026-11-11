@@ -44,7 +44,7 @@ app/.vite/*
 
 # Coding infrastructure runtime files (auto-added by coding startup)
 .constraint-monitor.yaml
-.claude/settings.local.json
+**/.claude/settings.local.json
 .health/
 .logs/
 logs/
